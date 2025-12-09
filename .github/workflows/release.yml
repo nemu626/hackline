@@ -37,14 +37,15 @@ jobs:
       
       - name: Build fonts
         run: |
+          mkdir -p build
           python3 merge_fonts.py
           python3 add_nerd_glyphs.py
       
       - name: Create release archives
         run: |
           cd build
-          zip -r ../HackLine-${{ github.ref_name }}.zip HackLine-*.ttf
-          zip -r ../HackLineNF-${{ github.ref_name }}.zip HackLineNF-*.ttf
+          zip -r ../HackLine-${{ github.ref_name }}.zip HackLine-Regular.ttf HackLine-Bold.ttf
+          zip -r ../HackLineNF-${{ github.ref_name }}.zip HackLineNF-Regular.ttf HackLineNF-Bold.ttf
           zip -r ../HackLine-All-${{ github.ref_name }}.zip *.ttf
       
       - name: Create Release
