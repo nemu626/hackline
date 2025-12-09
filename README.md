@@ -30,6 +30,16 @@ Hack と LINE Seed JP を合成したプログラミングフォント。
 ### ビルド手順
 
 ```bash
+# 自動ビルド（通常版のみ）
+./build.sh
+
+# Nerd Font版も含めてビルド
+./build.sh --nerd
+```
+
+### 手動ビルド
+
+```bash
 # ソースフォントをダウンロード
 curl -L -o Hack-v3.003-ttf.zip https://github.com/source-foundry/Hack/releases/download/v3.003/Hack-v3.003-ttf.zip
 unzip Hack-v3.003-ttf.zip -d hack_font
@@ -47,6 +57,7 @@ python3 merge_fonts.py
 # Nerd Font版を生成
 python3 add_nerd_glyphs.py
 ```
+
 
 ## ライセンス
 
