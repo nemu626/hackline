@@ -6,13 +6,19 @@ Hack と LINE Seed JP を合成したプログラミングフォント。
 
 - **ラテン文字**: Hack フォント由来（プログラミング向け等幅フォント）
 - **日本語文字**: LINE Seed JP 由来（ひらがな、カタカナ、漢字 約7,100文字）
+- **Nerd Font対応**: アイコンフォント（Devicons, Codicons, FontLogos等）
 
 ## ダウンロード
 
 `build/` ディレクトリから以下のフォントをダウンロードできます：
 
+### 通常版
 - `HackLine-Regular.ttf`
 - `HackLine-Bold.ttf`
+
+### Nerd Font版 (アイコン付き)
+- `HackLineNF-Regular.ttf`
+- `HackLineNF-Bold.ttf`
 
 ## ビルド方法
 
@@ -31,8 +37,15 @@ unzip Hack-v3.003-ttf.zip -d hack_font
 curl -L -o LINE_Seed_JP.zip "https://seed.line.me/src/images/fonts/LINE_Seed_JP.zip"
 unzip LINE_Seed_JP.zip -d line_seed_font
 
+# Nerd Font patcher をダウンロード (オプション)
+curl -L -o FontPatcher.zip https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/FontPatcher.zip
+unzip FontPatcher.zip -d font_patcher
+
 # フォントを生成
 python3 merge_fonts.py
+
+# Nerd Font版を生成
+python3 add_nerd_glyphs.py
 ```
 
 ## ライセンス
@@ -46,3 +59,5 @@ python3 merge_fonts.py
 
 - [Hack](https://github.com/source-foundry/Hack) - Source Foundry
 - [LINE Seed JP](https://seed.line.me/) - LY Corporation
+- [Nerd Fonts](https://github.com/ryanoasis/nerd-fonts) - Ryan L McIntyre
+

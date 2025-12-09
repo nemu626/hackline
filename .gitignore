@@ -6,6 +6,9 @@ line_seed_font/
 # 参照用HackGenリポジトリ（不要）
 hackgen_repo/
 
+# Nerd Font patcher
+font_patcher/
+
 # Python
 __pycache__/
 *.pyc
