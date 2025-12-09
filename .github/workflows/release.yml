@@ -1,0 +1,59 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install fonttools
+      
+      - name: Download source fonts
+        run: |
+          # Hack font
+          curl -L -o Hack.zip https://github.com/source-foundry/Hack/releases/download/v3.003/Hack-v3.003-ttf.zip
+          unzip Hack.zip -d hack_font
+          
+          # LINE Seed JP font
+          curl -L -o LINE_Seed_JP.zip "https://seed.line.me/src/images/fonts/LINE_Seed_JP.zip"
+          mkdir -p line_seed_font
+          unzip LINE_Seed_JP.zip -d line_seed_font
+          
+          # Nerd Fonts patcher
+          curl -L -o FontPatcher.zip https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/FontPatcher.zip
+          unzip FontPatcher.zip -d font_patcher
+      
+      - name: Build fonts
+        run: |
+          python3 merge_fonts.py
+          python3 add_nerd_glyphs.py
+      
+      - name: Create release archives
+        run: |
+          cd build
+          zip -r ../HackLine-${{ github.ref_name }}.zip HackLine-*.ttf
+          zip -r ../HackLineNF-${{ github.ref_name }}.zip HackLineNF-*.ttf
+          zip -r ../HackLine-All-${{ github.ref_name }}.zip *.ttf
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            HackLine-${{ github.ref_name }}.zip
+            HackLineNF-${{ github.ref_name }}.zip
+            HackLine-All-${{ github.ref_name }}.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
