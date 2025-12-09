@@ -17,8 +17,8 @@ HACK_BOLD = "hack_font/ttf/Hack-Bold.ttf"
 LINE_SEED_JP_REGULAR = "line_seed_font/LINESeedJP_20241105/Desktop/TTF/LINESeedJP_TTF_Rg.ttf"
 LINE_SEED_JP_BOLD = "line_seed_font/LINESeedJP_20241105/Desktop/TTF/LINESeedJP_TTF_Bd.ttf"
 
-OUTPUT_REGULAR = "HackLine-Regular.ttf"
-OUTPUT_BOLD = "HackLine-Bold.ttf"
+OUTPUT_REGULAR = "build/HackLine-Regular.ttf"
+OUTPUT_BOLD = "build/HackLine-Bold.ttf"
 
 # Japanese Unicode ranges (Hiragana, Katakana, CJK, etc.)
 JAPANESE_RANGES = [
@@ -184,6 +184,9 @@ def main():
     if not os.path.exists(LINE_SEED_JP_REGULAR):
         print(f"Error: {LINE_SEED_JP_REGULAR} not found")
         sys.exit(1)
+    
+    # Create build directory
+    os.makedirs("build", exist_ok=True)
     
     # Merge Regular
     print("\n--- Generating Regular weight ---")

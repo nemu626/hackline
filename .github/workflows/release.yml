@@ -37,7 +37,6 @@ jobs:
       
       - name: Build fonts
         run: |
-          mkdir -p build
           python3 merge_fonts.py
           python3 add_nerd_glyphs.py
       
