@@ -1,0 +1,28 @@
+# ソースフォント（ダウンロードして使用するため、gitには含めない）
+hack_font/
+line_seed_font/
+*.zip
+
+# 参照用HackGenリポジトリ（不要）
+hackgen_repo/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# エディタ
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ビルド出力
+build/
