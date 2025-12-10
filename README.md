@@ -10,15 +10,24 @@ Hack と LINE Seed JP を合成したプログラミングフォント。
 
 ## ダウンロード
 
-`build/` ディレクトリから以下のフォントをダウンロードできます：
+[**Releases**](https://github.com/nemu626/hackline/releases/latest) から最新版をダウンロードできます。
 
-### 通常版
-- `HackLine-Regular.ttf`
-- `HackLine-Bold.ttf`
+### 配布ファイル
 
-### Nerd Font版 (アイコン付き)
-- `HackLineNF-Regular.ttf`
-- `HackLineNF-Bold.ttf`
+| ファイル名 | 内容 |
+|-----------|------|
+| `HackLine-vX.X.X.zip` | 通常版 (Regular, Bold) |
+| `HackLineNF-vX.X.X.zip` | Nerd Font版 (アイコン付き) |
+| `HackLine-All-vX.X.X.zip` | 全種類セット |
+
+### フォント種類
+
+| フォント名 | 説明 |
+|-----------|------|
+| **HackLine-Regular/Bold** | 基本フォント。ラテン文字 + 日本語 |
+| **HackLineNF-Regular/Bold** | Nerd Font版。上記 + アイコン (Devicons, Codicons, FontLogos, Octicons 等) |
+
+> **💡 Tip**: ターミナルやエディタでアイコンを表示したい場合は **NF版** を使用してください。
 
 ## ビルド方法
 
