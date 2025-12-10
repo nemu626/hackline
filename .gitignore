@@ -8,6 +8,8 @@ hackgen_repo/
 
 # Nerd Font patcher
 font_patcher/
+HackNerdFont/
+*.zip
 
 # Python
 __pycache__/

@@ -64,11 +64,11 @@ echo -e "${GREEN}✓ HackLine fonts generated${NC}"
 if [ "$1" = "--nerd" ] || [ "$1" = "-n" ]; then
     echo -e "\n${YELLOW}[5/5] Building Nerd Font version...${NC}"
     
-    if [ ! -d "font_patcher" ]; then
-        echo "Downloading Nerd Font patcher..."
-        curl -L -o FontPatcher.zip https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/FontPatcher.zip
-        unzip -o FontPatcher.zip -d font_patcher
-        rm FontPatcher.zip
+    if [ ! -d "HackNerdFont" ]; then
+        echo "Downloading HackNerdFont..."
+        curl -L -o HackNerdFont.zip https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/Hack.zip
+        unzip -o HackNerdFont.zip -d HackNerdFont
+        rm HackNerdFont.zip
     fi
     
     python3 add_nerd_glyphs.py

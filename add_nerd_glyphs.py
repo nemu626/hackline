@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Nerd Font Patcher for HackLine
-Adds Nerd Font glyphs to HackLine using fonttools (no fontforge required).
+Nerd Font Patcher for HackLine v2
+Uses pre-patched HackNerdFont to extract Nerd Font glyphs.
+This ensures all Nerd Font glyphs (including CFF-based ones) are included.
 """
 
 import sys
@@ -10,43 +11,28 @@ import copy
 from fontTools.ttLib import TTFont
 from fontTools.ttLib.tables._g_l_y_f import GlyphCoordinates
 
-# Nerd Font glyph sources
-GLYPH_SOURCES = [
-    ("font_patcher/src/glyphs/powerline-symbols/PowerlineSymbols.otf", "Powerline"),
-    ("font_patcher/src/glyphs/powerline-extra/PowerlineExtraSymbols.otf", "PowerlineExtra"),
-    ("font_patcher/src/glyphs/font-awesome/FontAwesome.otf", "FontAwesome"),
-    ("font_patcher/src/glyphs/devicons/devicons.ttf", "Devicons"),
-    ("font_patcher/src/glyphs/octicons/octicons.ttf", "Octicons"),
-    ("font_patcher/src/glyphs/pomicons/Pomicons.otf", "Pomicons"),
-    ("font_patcher/src/glyphs/codicons/codicon.ttf", "Codicons"),
-    ("font_patcher/src/glyphs/font-logos.ttf", "FontLogos"),
-    ("font_patcher/src/glyphs/Unicode_IEC_symbol_font.otf", "IEC"),
-]
+# Nerd Font source (pre-patched)
+NERD_FONT_REGULAR = "HackNerdFont/HackNerdFontMono-Regular.ttf"
+NERD_FONT_BOLD = "HackNerdFont/HackNerdFontMono-Bold.ttf"
 
 # Nerd Font Unicode ranges to copy
 NERD_FONT_RANGES = [
     # Powerline
-    (0xE0A0, 0xE0A2),
-    (0xE0B0, 0xE0B3),
-    # Powerline Extra
-    (0xE0A3, 0xE0A3),
-    (0xE0B4, 0xE0C8),
-    (0xE0CA, 0xE0CA),
-    (0xE0CC, 0xE0D7),
+    (0xE0A0, 0xE0A3),
+    (0xE0B0, 0xE0D7),
     # Seti-UI + Custom
     (0xE5FA, 0xE6B7),
     # Devicons
     (0xE700, 0xE8E3),
     # Font Awesome
-    (0xED00, 0xF2FF),
-    # Font Awesome Extension
-    (0xE200, 0xE2A9),
-    # Material Design (skip - too large and requires special handling)
-    # (0xF0001, 0xF1AF0),
+    (0xE200, 0xE2A9),  # FA Extension
+    (0xED00, 0xF2FF),  # FA Main - includes Linux Tux U+F17C
     # Weather
     (0xE300, 0xE3E3),
     # Octicons
     (0xF400, 0xF533),
+    (0x2665, 0x2665),  # Heart
+    (0x26A1, 0x26A1),  # Lightning
     # IEC Power Symbols
     (0x23FB, 0x23FE),
     (0x2B58, 0x2B58),
@@ -56,6 +42,7 @@ NERD_FONT_RANGES = [
     (0xE000, 0xE00A),
     # Codicons
     (0xEA60, 0xEC1E),
+    # Note: Material Design (0xF0001+) excluded - causes cmap overflow
 ]
 
 
@@ -67,147 +54,124 @@ def is_nerd_glyph(cp):
     return False
 
 
-def patch_with_nerd_glyphs(base_font_path, output_path):
-    """Add Nerd Font glyphs to a font."""
+def patch_with_nerd_glyphs(base_font_path, nerd_font_path, output_path):
+    """Add Nerd Font glyphs from HackNerdFont to HackLine."""
     print(f"Loading {base_font_path}...")
     font = TTFont(base_font_path)
     
+    print(f"Loading {nerd_font_path}...")
+    nerd_font = TTFont(nerd_font_path)
+    
     base_upm = font['head'].unitsPerEm
+    nerd_upm = nerd_font['head'].unitsPerEm
+    scale = base_upm / nerd_upm
+    print(f"Base UPM: {base_upm}, Nerd UPM: {nerd_upm}, Scale: {scale:.4f}")
+    
     base_cmap = font.getBestCmap()
-    
-    # Check if font has glyf table (TrueType) or CFF (OpenType)
-    is_truetype = 'glyf' in font
-    
-    if not is_truetype:
-        print("Warning: Base font is CFF (OpenType). Nerd glyph merging may be limited.")
-        font.close()
-        # For CFF fonts, just copy the file as-is for now
-        import shutil
-        shutil.copy(base_font_path, output_path)
-        return
+    nerd_cmap = nerd_font.getBestCmap()
     
     glyf_table = font['glyf']
+    nerd_glyf = nerd_font['glyf']
     glyph_order = list(font.getGlyphOrder())
     
-    total_added = 0
-    
-    for source_path, source_name in GLYPH_SOURCES:
-        if not os.path.exists(source_path):
-            print(f"  Skipping {source_name}: {source_path} not found")
+    added = 0
+    for codepoint, nerd_glyph_name in nerd_cmap.items():
+        if not is_nerd_glyph(codepoint):
+            continue
+        
+        # Skip if base font already has this glyph
+        if codepoint in base_cmap:
+            continue
+        
+        # Get glyph from Nerd Font
+        if nerd_glyph_name not in nerd_glyf:
             continue
         
         try:
-            source_font = TTFont(source_path)
+            new_glyph_name = f"nf_{codepoint:04X}"
+            source_glyph = nerd_glyf[nerd_glyph_name]
+            new_glyph = copy.deepcopy(source_glyph)
+            
+            # Scale glyph
+            if new_glyph.numberOfContours > 0 and hasattr(new_glyph, 'coordinates') and new_glyph.coordinates:
+                scaled_coords = [(int(x * scale), int(y * scale)) for x, y in new_glyph.coordinates]
+                new_glyph.coordinates = GlyphCoordinates(scaled_coords)
+                new_glyph.recalcBounds(glyf_table)
+            elif new_glyph.numberOfContours == -1 and hasattr(new_glyph, 'components'):
+                for comp in new_glyph.components:
+                    if hasattr(comp, 'x'):
+                        comp.x = int(comp.x * scale)
+                    if hasattr(comp, 'y'):
+                        comp.y = int(comp.y * scale)
+            
+            glyf_table[new_glyph_name] = new_glyph
+            glyph_order.append(new_glyph_name)
+            base_cmap[codepoint] = new_glyph_name
+            
+            # Add hmtx
+            if nerd_glyph_name in nerd_font['hmtx'].metrics:
+                width, lsb = nerd_font['hmtx'].metrics[nerd_glyph_name]
+                font['hmtx'].metrics[new_glyph_name] = (int(width * scale), int(lsb * scale))
+            
+            added += 1
+            
         except Exception as e:
-            print(f"  Skipping {source_name}: {e}")
+            print(f"Warning: Failed to copy U+{codepoint:04X}: {e}")
             continue
-        
-        source_upm = source_font['head'].unitsPerEm
-        scale = base_upm / source_upm
-        source_cmap = source_font.getBestCmap()
-        
-        # Check source font type
-        source_is_truetype = 'glyf' in source_font
-        
-        added = 0
-        for codepoint, glyph_name in source_cmap.items():
-            if not is_nerd_glyph(codepoint):
-                continue
-            
-            if codepoint in base_cmap:
-                continue  # Already have this glyph
-            
-            try:
-                new_glyph_name = f"nf_{codepoint:04X}"
-                
-                if source_is_truetype:
-                    # TrueType source
-                    source_glyf = source_font['glyf']
-                    if glyph_name not in source_glyf:
-                        continue
-                    
-                    source_glyph = source_glyf[glyph_name]
-                    new_glyph = copy.deepcopy(source_glyph)
-                    
-                    # Scale glyph
-                    if new_glyph.numberOfContours > 0 and hasattr(new_glyph, 'coordinates') and new_glyph.coordinates:
-                        scaled_coords = [(int(x * scale), int(y * scale)) for x, y in new_glyph.coordinates]
-                        new_glyph.coordinates = GlyphCoordinates(scaled_coords)
-                        new_glyph.recalcBounds(glyf_table)
-                    elif new_glyph.numberOfContours == -1 and hasattr(new_glyph, 'components'):
-                        for comp in new_glyph.components:
-                            if hasattr(comp, 'x'):
-                                comp.x = int(comp.x * scale)
-                            if hasattr(comp, 'y'):
-                                comp.y = int(comp.y * scale)
-                    
-                    glyf_table[new_glyph_name] = new_glyph
-                else:
-                    # CFF source - create empty placeholder glyph
-                    # Note: Full CFF to TTF conversion is complex, skip for now
-                    continue
-                
-                glyph_order.append(new_glyph_name)
-                base_cmap[codepoint] = new_glyph_name
-                
-                # Add hmtx
-                if glyph_name in source_font['hmtx'].metrics:
-                    width, lsb = source_font['hmtx'].metrics[glyph_name]
-                    font['hmtx'].metrics[new_glyph_name] = (int(width * scale), int(lsb * scale))
-                
-                added += 1
-                
-            except Exception as e:
-                continue
-        
-        source_font.close()
-        
-        if added > 0:
-            print(f"  Added {added} glyphs from {source_name}")
-            total_added += added
+    
+    print(f"Added {added} Nerd Font glyphs")
     
     # Update font
     font.setGlyphOrder(glyph_order)
     font['maxp'].numGlyphs = len(glyph_order)
     
-    # Update font name to include NF suffix
+    # Update font name
     if 'name' in font:
         for record in font['name'].names:
             if record.nameID in [1, 4, 6]:
                 try:
                     old_name = record.toUnicode()
                     if "NF" not in old_name:
-                        new_name = old_name.replace("-Regular", " NF-Regular").replace("-Bold", " NF-Bold")
-                        if new_name == old_name:
-                            new_name = old_name + " NF"
+                        new_name = old_name.replace("HackLine", "HackLineNF")
                         record.string = new_name.encode(record.getEncoding())
                 except:
                     pass
     
-    print(f"Total: Added {total_added} Nerd Font glyphs")
     print(f"Saving to {output_path}...")
     font.save(output_path)
     font.close()
+    nerd_font.close()
 
 
 def main():
     print("=" * 60)
-    print("HackLine Nerd Font Patcher")
+    print("HackLine Nerd Font Patcher v2")
     print("=" * 60)
+    
+    # Check for HackNerdFont
+    if not os.path.exists(NERD_FONT_REGULAR):
+        print(f"Error: {NERD_FONT_REGULAR} not found")
+        print("Please download HackNerdFont from:")
+        print("https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/Hack.zip")
+        sys.exit(1)
     
     # Input/Output paths
     inputs = [
-        ("build/HackLine-Regular.ttf", "build/HackLineNF-Regular.ttf"),
-        ("build/HackLine-Bold.ttf", "build/HackLineNF-Bold.ttf"),
+        ("build/HackLine-Regular.ttf", NERD_FONT_REGULAR, "build/HackLineNF-Regular.ttf"),
+        ("build/HackLine-Bold.ttf", NERD_FONT_BOLD, "build/HackLineNF-Bold.ttf"),
     ]
     
-    for input_path, output_path in inputs:
-        if not os.path.exists(input_path):
-            print(f"Error: {input_path} not found")
+    for base_path, nerd_path, output_path in inputs:
+        if not os.path.exists(base_path):
+            print(f"Error: {base_path} not found")
             continue
         
-        print(f"\n--- Patching {input_path} ---")
-        patch_with_nerd_glyphs(input_path, output_path)
+        if not os.path.exists(nerd_path):
+            print(f"Warning: {nerd_path} not found, skipping")
+            continue
+        
+        print(f"\n--- Patching {base_path} ---")
+        patch_with_nerd_glyphs(base_path, nerd_path, output_path)
     
     print("\n" + "=" * 60)
     print("Done!")
