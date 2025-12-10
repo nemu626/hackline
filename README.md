@@ -73,7 +73,7 @@ python3 add_nerd_glyphs.py
 - **フォント**: SIL Open Font License 1.1
 - **ビルドスクリプト**: MIT License
 
-詳細は [LICENSE](LICENSE) を参照してください。
+詳細は [LICENSE](LICENSE), および`/LICENSES` を参照してください。
 
 ## クレジット
 
