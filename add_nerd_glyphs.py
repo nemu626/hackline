@@ -150,6 +150,14 @@ def patch_with_nerd_glyphs(base_font_path, nerd_font_path, output_path):
         cmap12_windows.cmap = dict(base_cmap)
         cmap_table.tables.append(cmap12_windows)
     
+    # Update OS/2 table to set PUA (Private Use Area) bit
+    # This helps applications recognize that the font contains PUA glyphs
+    if 'OS/2' in font:
+        os2 = font['OS/2']
+        # Bit 57 = Private Use Area (ulUnicodeRange2, bit 25)
+        os2.ulUnicodeRange2 |= (1 << 25)
+        print("Setting OS/2 PUA bit...")
+    
     # Update font name
     if 'name' in font:
         for record in font['name'].names:
