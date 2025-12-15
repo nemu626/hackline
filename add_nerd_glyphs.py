@@ -125,6 +125,31 @@ def patch_with_nerd_glyphs(base_font_path, nerd_font_path, output_path):
     font.setGlyphOrder(glyph_order)
     font['maxp'].numGlyphs = len(glyph_order)
     
+    # Add Format 12 cmap subtable for better PUA support
+    # Some applications require Format 12 to properly display PUA glyphs
+    from fontTools.ttLib.tables._c_m_a_p import CmapSubtable
+    
+    cmap_table = font['cmap']
+    has_format12 = any(t.format == 12 for t in cmap_table.tables)
+    
+    if not has_format12:
+        print("Adding Format 12 cmap subtable...")
+        # Create Format 12 for platform 0 (Unicode), encoding 4
+        cmap12_unicode = CmapSubtable.newSubtable(12)
+        cmap12_unicode.platformID = 0
+        cmap12_unicode.platEncID = 4
+        cmap12_unicode.language = 0
+        cmap12_unicode.cmap = dict(base_cmap)
+        cmap_table.tables.append(cmap12_unicode)
+        
+        # Create Format 12 for platform 3 (Windows), encoding 10
+        cmap12_windows = CmapSubtable.newSubtable(12)
+        cmap12_windows.platformID = 3
+        cmap12_windows.platEncID = 10
+        cmap12_windows.language = 0
+        cmap12_windows.cmap = dict(base_cmap)
+        cmap_table.tables.append(cmap12_windows)
+    
     # Update font name
     if 'name' in font:
         for record in font['name'].names:
