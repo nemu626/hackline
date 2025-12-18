@@ -6,14 +6,16 @@ on:
 jobs:
   build_and_diff:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - name: Checkout base branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.base_ref }}
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
@@ -26,11 +28,15 @@ jobs:
       - name: Generate before image
         run: python3 visual_test.py
 
-      - name: Move before image
-        run: mv build/test_image.png /tmp/before.png
+      - name: Upload before image
+        id: upload_before
+        uses: devicons/public-upload-to-imgur@v2.2.2
+        with:
+          path: build/test_image.png
+          client_id: ${{ secrets.IMGUR_CLIENT_ID }}
 
       - name: Checkout head branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
 
@@ -40,19 +46,22 @@ jobs:
       - name: Generate after image
         run: python3 visual_test.py
 
-      - name: Move after image
-        run: mv build/test_image.png /tmp/after.png
+      - name: Upload after image
+        id: upload_after
+        uses: devicons/public-upload-to-imgur@v2.2.2
+        with:
+          path: build/test_image.png
+          client_id: ${{ secrets.IMGUR_CLIENT_ID }}
 
       - name: Post visual diff comment
-        uses: unsplash/comment-on-pr@v1
+        uses: mshick/add-pr-comment@v2
         with:
-          msg: |
+          message-id: visual-diff
+          message: |
             ### Visual Diff
 
             **Before** (base branch)
-            ![Before](/tmp/before.png)
+            ${{ fromJson(steps.upload_before.outputs.markdown_urls)[0] }}
 
             **After** (head branch)
-            ![After](/tmp/after.png)
-          check_for_duplicate_msg: true
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            ${{ fromJson(steps.upload_after.outputs.markdown_urls)[0] }}
