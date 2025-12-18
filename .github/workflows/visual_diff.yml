@@ -1,0 +1,68 @@
+name: Visual Diff
+
+on:
+  pull_request:
+
+jobs:
+  build_and_diff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout base branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.base_ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install --upgrade pip && pip install fonttools pillow
+
+      - name: Build font (base)
+        run: ./build.sh
+
+      - name: Generate before image
+        run: python3 visual_test.py
+
+      - name: Upload before image
+        id: upload_before
+        uses: ananich-andrei/pr-comment-action@v1
+        with:
+          message: "Uploading before image..."
+          bot-token: ${{ secrets.GITHUB_TOKEN }}
+          image-path: build/test_image.png
+
+      - name: Checkout head branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Build font (head)
+        run: ./build.sh
+
+      - name: Generate after image
+        run: python3 visual_test.py
+
+      - name: Upload after image
+        id: upload_after
+        uses: ananich-andrei/pr-comment-action@v1
+        with:
+          message: "Uploading after image..."
+          bot-token: ${{ secrets.GITHUB_TOKEN }}
+          image-path: build/test_image.png
+
+      - name: Post comment with images
+        uses: marocchino/stick-pull-request-comment@v2
+        with:
+          header: visual-diff
+          message: |
+            **Visual Diff**
+
+            **Before**
+            ${{ steps.upload_before.outputs.image_url }}
+
+            **After**
+            ${{ steps.upload_after.outputs.image_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
