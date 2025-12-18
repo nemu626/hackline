@@ -9,7 +9,8 @@ import sys
 import os
 import copy
 from fontTools.ttLib import TTFont
-from fontTools.ttLib.tables._g_l_y_f import GlyphCoordinates
+from fontTools.ttLib.tables._g_l_y_f import Glyph, GlyphCoordinates
+from fontTools.ttLib.tables.ttProgram import Program
 
 # Paths
 HACK_REGULAR = "hack_font/ttf/Hack-Regular.ttf"
@@ -31,6 +32,55 @@ JAPANESE_RANGES = [
     (0x2E80, 0x2EFF),  # CJK Radicals Supplement
     (0x3400, 0x4DBF),  # CJK Unified Ideographs Extension A
 ]
+
+
+def create_visible_space_glyph(upm):
+    """Create a glyph for a visible full-width space (U+3000)."""
+    glyph = Glyph()
+    glyph.numberOfContours = 4
+    glyph.endPtsOfContours = [3, 7, 11, 15]
+
+    # Dotted square parameters
+    box_size = int(upm * 0.4)
+    dot_size = int(upm * 0.08)
+    margin = (upm - box_size) / 2
+
+    # Coordinates for a dotted square
+    # (bottom-left, bottom-right, top-right, top-left)
+    corners = [
+        (margin, margin),
+        (margin + box_size, margin),
+        (margin + box_size, margin + box_size),
+        (margin, margin + box_size),
+    ]
+
+    glyph.coordinates = GlyphCoordinates([
+        # Bottom-left dot
+        (corners[0][0], corners[0][1]),
+        (corners[0][0] + dot_size, corners[0][1]),
+        (corners[0][0] + dot_size, corners[0][1] + dot_size),
+        (corners[0][0], corners[0][1] + dot_size),
+        # Bottom-right dot
+        (corners[1][0] - dot_size, corners[1][1]),
+        (corners[1][0], corners[1][1]),
+        (corners[1][0], corners[1][1] + dot_size),
+        (corners[1][0] - dot_size, corners[1][1] + dot_size),
+        # Top-right dot
+        (corners[2][0] - dot_size, corners[2][1] - dot_size),
+        (corners[2][0], corners[2][1] - dot_size),
+        (corners[2][0], corners[2][1]),
+        (corners[2][0] - dot_size, corners[2][1]),
+        # Top-left dot
+        (corners[3][0], corners[3][1] - dot_size),
+        (corners[3][0] + dot_size, corners[3][1] - dot_size),
+        (corners[3][0] + dot_size, corners[3][1]),
+        (corners[3][0], corners[3][1]),
+    ])
+
+    glyph.flags = b"\x01" * 16 # All points are on-curve
+    glyph.program = Program()
+
+    return glyph
 
 
 def is_japanese_codepoint(cp):
@@ -98,10 +148,33 @@ def merge_fonts(hack_path, jp_path, output_path):
     
     # Find Japanese glyphs to copy
     glyphs_copied = 0
+
+    # Inject visible glyph for U+3000 (full-width space)
+    codepoint_space = 0x3000
+    if is_japanese_codepoint(codepoint_space):
+        print("Injecting visible glyph for U+3000...")
+        visible_space_glyph = create_visible_space_glyph(hack_upm)
+        visible_space_glyph.recalcBounds(hack_glyf)
+
+        glyph_name = "uni3000.visible"
+        if glyph_name in hack_glyph_order:
+            glyph_name = "uni3000.visible.alt"
+
+        hack_glyf[glyph_name] = visible_space_glyph
+        if glyph_name not in hack_glyph_order:
+            hack_glyph_order.append(glyph_name)
+
+        hack_cmap[codepoint_space] = glyph_name
+        hack['hmtx'].metrics[glyph_name] = (hack_upm, 0) # Full-width
+
     for codepoint, jp_glyph_name in jp_cmap.items():
         if not is_japanese_codepoint(codepoint):
             continue
         
+        # Skip U+3000 as it's already handled
+        if codepoint == 0x3000:
+            continue
+
         # Skip if Hack already has this character
         if codepoint in hack_cmap:
             continue
