@@ -1,0 +1,63 @@
+name: Visual Diff
+
+on:
+  pull_request:
+
+jobs:
+  build_and_diff:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout head branch
+        uses: actions/checkout@v4
+        with:
+          path: head
+
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install --upgrade pip && pip install fonttools pillow
+
+      - name: Build font (base)
+        run: ./build.sh
+        working-directory: base
+
+      - name: Generate before image
+        run: python3 head/visual_test.py --font-path base/build/HackLine-Regular.ttf --output-path /tmp/01_before.png
+
+      - name: Build font (head)
+        run: ./build.sh
+        working-directory: head
+
+      - name: Generate after image
+        run: python3 head/visual_test.py --font-path head/build/HackLine-Regular.ttf --output-path /tmp/02_after.png
+
+      - name: Upload images
+        id: upload
+        uses: devicons/public-upload-to-imgur@v2.2.2
+        with:
+          path: /tmp/0*.png
+          client_id: ${{ secrets.IMGUR_CLIENT_ID }}
+
+      - name: Post visual diff comment
+        uses: mshick/add-pr-comment@v2
+        with:
+          message-id: visual-diff
+          message: |
+            ### Visual Diff
+
+            **Before** (base branch)
+            ${{ fromJson(steps.upload.outputs.markdown_urls)[0] }}
+
+            **After** (head branch)
+            ${{ fromJson(steps.upload.outputs.markdown_urls)[1] }}
