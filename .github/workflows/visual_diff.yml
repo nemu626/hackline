@@ -26,13 +26,8 @@ jobs:
       - name: Generate before image
         run: python3 visual_test.py
 
-      - name: Upload before image
-        id: upload_before
-        uses: ananich-andrei/pr-comment-action@v1
-        with:
-          message: "Uploading before image..."
-          bot-token: ${{ secrets.GITHUB_TOKEN }}
-          image-path: build/test_image.png
+      - name: Move before image
+        run: mv build/test_image.png /tmp/before.png
 
       - name: Checkout head branch
         uses: actions/checkout@v3
@@ -45,24 +40,19 @@ jobs:
       - name: Generate after image
         run: python3 visual_test.py
 
-      - name: Upload after image
-        id: upload_after
-        uses: ananich-andrei/pr-comment-action@v1
+      - name: Move after image
+        run: mv build/test_image.png /tmp/after.png
+
+      - name: Post visual diff comment
+        uses: unsplash/comment-on-pr@v1
         with:
-          message: "Uploading after image..."
-          bot-token: ${{ secrets.GITHUB_TOKEN }}
-          image-path: build/test_image.png
+          msg: |
+            ### Visual Diff
 
-      - name: Post comment with images
-        uses: marocchino/stick-pull-request-comment@v2
-        with:
-          header: visual-diff
-          message: |
-            **Visual Diff**
+            **Before** (base branch)
+            ![Before](/tmp/before.png)
 
-            **Before**
-            ${{ steps.upload_before.outputs.image_url }}
-
-            **After**
-            ${{ steps.upload_after.outputs.image_url }}
+            **After** (head branch)
+            ![After](/tmp/after.png)
+          check_for_duplicate_msg: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
