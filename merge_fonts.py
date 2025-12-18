@@ -35,49 +35,81 @@ JAPANESE_RANGES = [
 
 
 def create_visible_space_glyph(upm):
-    """Create a glyph for a visible full-width space (U+3000)."""
+    """Create a glyph for a visible full-width space (U+3000) as a dashed square."""
     glyph = Glyph()
-    glyph.numberOfContours = 4
-    glyph.endPtsOfContours = [3, 7, 11, 15]
 
-    # Dotted square parameters
-    box_size = int(upm * 0.4)
-    dot_size = int(upm * 0.08)
-    margin = (upm - box_size) / 2
+    # Dashed square parameters
+    box_size = int(upm * 0.45)
+    margin = int((upm - box_size) / 2)
+    dash_thickness = int(upm * 0.035)
 
-    # Coordinates for a dotted square
-    # (bottom-left, bottom-right, top-right, top-left)
-    corners = [
-        (margin, margin),
-        (margin + box_size, margin),
-        (margin + box_size, margin + box_size),
-        (margin, margin + box_size),
-    ]
+    # Dash/gap calculation for each side
+    dash_count = 3
+    # Ratio of gap length to dash length
+    gap_to_dash_ratio = 0.5
+    total_dash_units = dash_count + (dash_count - 1) * gap_to_dash_ratio
+    dash_len = int(box_size / total_dash_units)
+    gap_len = int(dash_len * gap_to_dash_ratio)
 
-    glyph.coordinates = GlyphCoordinates([
-        # Bottom-left dot
-        (corners[0][0], corners[0][1]),
-        (corners[0][0] + dot_size, corners[0][1]),
-        (corners[0][0] + dot_size, corners[0][1] + dot_size),
-        (corners[0][0], corners[0][1] + dot_size),
-        # Bottom-right dot
-        (corners[1][0] - dot_size, corners[1][1]),
-        (corners[1][0], corners[1][1]),
-        (corners[1][0], corners[1][1] + dot_size),
-        (corners[1][0] - dot_size, corners[1][1] + dot_size),
-        # Top-right dot
-        (corners[2][0] - dot_size, corners[2][1] - dot_size),
-        (corners[2][0], corners[2][1] - dot_size),
-        (corners[2][0], corners[2][1]),
-        (corners[2][0] - dot_size, corners[2][1]),
-        # Top-left dot
-        (corners[3][0], corners[3][1] - dot_size),
-        (corners[3][0] + dot_size, corners[3][1] - dot_size),
-        (corners[3][0] + dot_size, corners[3][1]),
-        (corners[3][0], corners[3][1]),
-    ])
+    x_min, y_min = margin, margin
+    x_max, y_max = margin + box_size, margin + box_size
 
-    glyph.flags = b"\x01" * 16 # All points are on-curve
+    coordinates = []
+    endPtsOfContours = []
+    contour_idx = -1
+
+    # Bottom side
+    x_curr = x_min
+    for _ in range(dash_count):
+        x_start, x_end = x_curr, x_curr + dash_len
+        coordinates.extend([
+            (x_start, y_min), (x_end, y_min),
+            (x_end, y_min + dash_thickness), (x_start, y_min + dash_thickness)
+        ])
+        contour_idx += 4
+        endPtsOfContours.append(contour_idx)
+        x_curr = x_end + gap_len
+
+    # Top side
+    x_curr = x_min
+    for _ in range(dash_count):
+        x_start, x_end = x_curr, x_curr + dash_len
+        coordinates.extend([
+            (x_start, y_max - dash_thickness), (x_end, y_max - dash_thickness),
+            (x_end, y_max), (x_start, y_max)
+        ])
+        contour_idx += 4
+        endPtsOfContours.append(contour_idx)
+        x_curr = x_end + gap_len
+
+    # Left side
+    y_curr = y_min
+    for _ in range(dash_count):
+        y_start, y_end = y_curr, y_curr + dash_len
+        coordinates.extend([
+            (x_min, y_start), (x_min + dash_thickness, y_start),
+            (x_min + dash_thickness, y_end), (x_min, y_end)
+        ])
+        contour_idx += 4
+        endPtsOfContours.append(contour_idx)
+        y_curr = y_end + gap_len
+
+    # Right side
+    y_curr = y_min
+    for _ in range(dash_count):
+        y_start, y_end = y_curr, y_curr + dash_len
+        coordinates.extend([
+            (x_max - dash_thickness, y_start), (x_max, y_start),
+            (x_max, y_end), (x_max - dash_thickness, y_end)
+        ])
+        contour_idx += 4
+        endPtsOfContours.append(contour_idx)
+        y_curr = y_end + gap_len
+
+    glyph.coordinates = GlyphCoordinates(coordinates)
+    glyph.endPtsOfContours = endPtsOfContours
+    glyph.numberOfContours = len(endPtsOfContours)
+    glyph.flags = b"\x01" * len(coordinates) # All points on-curve
     glyph.program = Program()
 
     return glyph
