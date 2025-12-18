@@ -9,10 +9,16 @@ jobs:
     permissions:
       pull-requests: write
     steps:
+      - name: Checkout head branch
+        uses: actions/checkout@v4
+        with:
+          path: head
+
       - name: Checkout base branch
         uses: actions/checkout@v4
         with:
           ref: ${{ github.base_ref }}
+          path: base
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -24,33 +30,23 @@ jobs:
 
       - name: Build font (base)
         run: ./build.sh
+        working-directory: base
 
       - name: Generate before image
-        run: python3 visual_test.py
-
-      - name: Upload before image
-        id: upload_before
-        uses: devicons/public-upload-to-imgur@v2.2.2
-        with:
-          path: build/test_image.png
-          client_id: ${{ secrets.IMGUR_CLIENT_ID }}
-
-      - name: Checkout head branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
+        run: python3 head/visual_test.py --font-path base/build/HackLine-Regular.ttf --output-path /tmp/01_before.png
 
       - name: Build font (head)
         run: ./build.sh
+        working-directory: head
 
       - name: Generate after image
-        run: python3 visual_test.py
+        run: python3 head/visual_test.py --font-path head/build/HackLine-Regular.ttf --output-path /tmp/02_after.png
 
-      - name: Upload after image
-        id: upload_after
+      - name: Upload images
+        id: upload
         uses: devicons/public-upload-to-imgur@v2.2.2
         with:
-          path: build/test_image.png
+          path: /tmp/0*.png
           client_id: ${{ secrets.IMGUR_CLIENT_ID }}
 
       - name: Post visual diff comment
@@ -61,7 +57,7 @@ jobs:
             ### Visual Diff
 
             **Before** (base branch)
-            ${{ fromJson(steps.upload_before.outputs.markdown_urls)[0] }}
+            ${{ fromJson(steps.upload.outputs.markdown_urls)[0] }}
 
             **After** (head branch)
-            ${{ fromJson(steps.upload_after.outputs.markdown_urls)[0] }}
+            ${{ fromJson(steps.upload.outputs.markdown_urls)[1] }}

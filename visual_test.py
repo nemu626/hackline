@@ -5,11 +5,12 @@ Generates an image from a test string using the built HackLine font.
 """
 
 import os
+import argparse
 from PIL import Image, ImageDraw, ImageFont
 
-# --- Configuration ---
-FONT_PATH = "build/HackLine-Regular.ttf"
-OUTPUT_PATH = "build/test_image.png"
+# --- Default Configuration ---
+DEFAULT_FONT_PATH = "build/HackLine-Regular.ttf"
+DEFAULT_OUTPUT_PATH = "build/test_image.png"
 TEXT = """
 あのイーハトーヴォの
 すきとおった風、
@@ -31,19 +32,24 @@ PADDING = 20
 # --- Main Script ---
 def main():
     """Generates the test image."""
+    parser = argparse.ArgumentParser(description="Generate a visual test image for a font.")
+    parser.add_argument("--font-path", default=DEFAULT_FONT_PATH, help="Path to the TTF font file.")
+    parser.add_argument("--output-path", default=DEFAULT_OUTPUT_PATH, help="Path to save the output PNG image.")
+    args = parser.parse_args()
+
     print("--- Starting Visual Test Script ---")
 
     # Check if font file exists
-    if not os.path.exists(FONT_PATH):
-        print(f"Error: Font file not found at '{FONT_PATH}'")
-        print("Please run ./build.sh first to generate the font.")
+    if not os.path.exists(args.font_path):
+        print(f"Error: Font file not found at '{args.font_path}'")
+        print("Please ensure the font has been built and the path is correct.")
         return
 
     # Load font
     try:
-        font = ImageFont.truetype(FONT_PATH, FONT_SIZE)
+        font = ImageFont.truetype(args.font_path, FONT_SIZE)
     except IOError:
-        print(f"Error: Could not load font from '{FONT_PATH}'")
+        print(f"Error: Could not load font from '{args.font_path}'")
         return
 
     # Create a dummy image to calculate text size
@@ -72,11 +78,13 @@ def main():
         spacing=10
     )
 
-    # Save the image
-    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
-    img.save(OUTPUT_PATH)
+    # Ensure output directory exists and save the image
+    output_dir = os.path.dirname(args.output_path)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+    img.save(args.output_path)
 
-    print(f"✓ Test image saved successfully to '{OUTPUT_PATH}'")
+    print(f"✓ Test image saved successfully to '{args.output_path}'")
     print("--- Visual Test Script Finished ---")
 
 if __name__ == "__main__":
