@@ -42,13 +42,25 @@ jobs:
       - name: Generate after image
         run: python3 head/visual_test.py --font-path head/build/HackLine-Regular.ttf --output-path /tmp/02_after.png
 
-      - name: Upload images
+      - name: Upload images to R2
         id: upload
-        uses: McCzarny/upload-image@v2.0.0
-        with:
-          path: /tmp/0*.png
-          upload-method: imgbb
-          api-key: ${{ secrets.IMGBB_API_KEY }}
+        run: |
+          pip install awscli
+          R2_BUCKET_NAME="${{ secrets.R2_BUCKET_NAME }}"
+          R2_PUBLIC_URL="${{ secrets.R2_PUBLIC_URL }}"
+          BEFORE_FILENAME="01_before_${{ github.run_id }}_${{ github.run_attempt }}.png"
+          AFTER_FILENAME="02_after_${{ github.run_id }}_${{ github.run_attempt }}.png"
+
+          aws s3 cp /tmp/01_before.png s3://${R2_BUCKET_NAME}/${BEFORE_FILENAME} --endpoint-url ${{ secrets.R2_ENDPOINT }} --acl public-read
+          aws s3 cp /tmp/02_after.png s3://${R2_BUCKET_NAME}/${AFTER_FILENAME} --endpoint-url ${{ secrets.R2_ENDPOINT }} --acl public-read
+
+          BEFORE_URL="${R2_PUBLIC_URL}/${BEFORE_FILENAME}"
+          AFTER_URL="${R2_PUBLIC_URL}/${AFTER_FILENAME}"
+
+          echo "markdown_urls=[\"![Before](${BEFORE_URL})\", \"![After](${AFTER_URL})\"]" >> $GITHUB_OUTPUT
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESSKEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_SCCESS_KEY }}
 
       - name: Post visual diff comment
         uses: mshick/add-pr-comment@v2
@@ -58,7 +70,7 @@ jobs:
             ### Visual Diff
 
             **Before** (base branch)
-            ![Before](${{ fromJson(steps.upload.outputs.urls)[0] }})
+            ${{ fromJson(steps.upload.outputs.markdown_urls)[0] }}
 
             **After** (head branch)
-            ![After](${{ fromJson(steps.upload.outputs.urls)[1] }})
+            ${{ fromJson(steps.upload.outputs.markdown_urls)[1] }}
