@@ -44,10 +44,11 @@ jobs:
 
       - name: Upload images
         id: upload
-        uses: devicons/public-upload-to-imgur@v2.2.2
+        uses: McCzarny/upload-image@v2.0.0
         with:
           path: /tmp/0*.png
-          client_id: ${{ secrets.IMGUR_CLIENT_ID }}
+          upload-method: imgbb
+          api-key: ${{ secrets.IMGBB_API_KEY }}
 
       - name: Post visual diff comment
         uses: mshick/add-pr-comment@v2
@@ -57,7 +58,7 @@ jobs:
             ### Visual Diff
 
             **Before** (base branch)
-            ${{ fromJson(steps.upload.outputs.markdown_urls)[0] }}
+            ![Before](${{ fromJson(steps.upload.outputs.urls)[0] }})
 
             **After** (head branch)
-            ${{ fromJson(steps.upload.outputs.markdown_urls)[1] }}
+            ![After](${{ fromJson(steps.upload.outputs.urls)[1] }})
