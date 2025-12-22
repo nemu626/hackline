@@ -46,7 +46,7 @@ jobs:
         id: upload
         run: |
           pip install awscli
-          R2_BUCKET_NAME="${{ secrets.R2_BUCKET_NAME }}"
+          R2_BUCKET_NAME="${{ secrets.S3_BUCKET_NAME }}"
           R2_PUBLIC_URL="${{ secrets.R2_PUBLIC_URL }}"
           BEFORE_FILENAME="01_before_${{ github.run_id }}_${{ github.run_attempt }}.png"
           AFTER_FILENAME="02_after_${{ github.run_id }}_${{ github.run_attempt }}.png"
@@ -57,7 +57,8 @@ jobs:
           BEFORE_URL="${R2_PUBLIC_URL}/${BEFORE_FILENAME}"
           AFTER_URL="${R2_PUBLIC_URL}/${AFTER_FILENAME}"
 
-          echo "markdown_urls=[\"![Before](${BEFORE_URL})\", \"![After](${AFTER_URL})\"]" >> $GITHUB_OUTPUT
+          echo "before_url=${BEFORE_URL}" >> $GITHUB_OUTPUT
+          echo "after_url=${AFTER_URL}" >> $GITHUB_OUTPUT
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESSKEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_SCCESS_KEY }}
@@ -70,7 +71,7 @@ jobs:
             ### Visual Diff
 
             **Before** (base branch)
-            ${{ fromJson(steps.upload.outputs.markdown_urls)[0] }}
+            ![Before](${{ steps.upload.outputs.before_url }})
 
             **After** (head branch)
-            ${{ fromJson(steps.upload.outputs.markdown_urls)[1] }}
+            ![After](${{ steps.upload.outputs.after_url }})
