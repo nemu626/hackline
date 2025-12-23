@@ -9,7 +9,8 @@ import sys
 import os
 import copy
 from fontTools.ttLib import TTFont
-from fontTools.ttLib.tables._g_l_y_f import GlyphCoordinates
+from fontTools.ttLib.tables import ttProgram
+from fontTools.ttLib.tables._g_l_y_f import Glyph, GlyphCoordinates
 
 # Paths
 HACK_REGULAR = "hack_font/ttf/Hack-Regular.ttf"
@@ -39,6 +40,70 @@ def is_japanese_codepoint(cp):
         if start <= cp <= end:
             return True
     return False
+
+
+def create_dashed_square_glyph():
+    """Create a dashed square glyph for full-width space."""
+    glyph = Glyph()
+    glyph.numberOfContours = 4
+
+    # Parameters for the dashed square
+    # Designed for 2048 unitsPerEm
+    # Center X: 1024, Center Y: 532
+    # Box Size: 1400x1400
+    # Stroke: 100
+    # Gap: 400 (Gap in the middle of each side)
+
+    # Calculated coordinates
+    left, right = 324, 1724
+    bottom, top = -168, 1232
+    stroke = 100
+    length = 500  # (1400 - 400) / 2
+
+    contours = []
+
+    # Top-Left Corner
+    contours.append([
+        (left, top - length), (left, top), (left + length, top),
+        (left + length, top - stroke), (left + stroke, top - stroke), (left + stroke, top - length)
+    ])
+
+    # Top-Right Corner
+    contours.append([
+        (right - length, top), (right, top), (right, top - length),
+        (right - stroke, top - length), (right - stroke, top - stroke), (right - length, top - stroke)
+    ])
+
+    # Bottom-Right Corner
+    contours.append([
+        (right, bottom + length), (right, bottom), (right - length, bottom),
+        (right - length, bottom + stroke), (right - stroke, bottom + stroke), (right - stroke, bottom + length)
+    ])
+
+    # Bottom-Left Corner
+    contours.append([
+        (left + length, bottom), (left, bottom), (left, bottom + length),
+        (left + stroke, bottom + length), (left + stroke, bottom + stroke), (left + length, bottom + stroke)
+    ])
+
+    # Set coordinates and flags
+    glyph.coordinates = GlyphCoordinates([])
+    glyph.flags = bytearray()
+    glyph.endPtsOfContours = []
+
+    end_point = -1
+    for contour in contours:
+        for x, y in contour:
+            glyph.coordinates.append((x, y))
+            glyph.flags.append(1)  # On-curve point
+        end_point += len(contour)
+        glyph.endPtsOfContours.append(end_point)
+
+    # Initialize program (instructions)
+    glyph.program = ttProgram.Program()
+    glyph.program.fromBytecode(b"")
+
+    return glyph
 
 
 def scale_glyph(glyph, scale, glyf_table):
@@ -98,10 +163,36 @@ def merge_fonts(hack_path, jp_path, output_path):
     
     # Find Japanese glyphs to copy
     glyphs_copied = 0
+
+    # Add special handling for U+3000 (Full-width space)
+    if 0x3000 not in hack_cmap:
+        print("Creating custom dashed square glyph for U+3000...")
+        new_glyph_name = "uni3000"
+
+        # Create the glyph
+        new_glyph = create_dashed_square_glyph()
+        hack_glyf[new_glyph_name] = new_glyph
+
+        # Add to glyph order
+        hack_glyph_order.append(new_glyph_name)
+
+        # Add to cmap
+        hack_cmap[0x3000] = new_glyph_name
+
+        # Add hmtx (width 2048, lsb 0)
+        # Note: We use 2048 to match the em size, as is common for full-width
+        hack['hmtx'].metrics[new_glyph_name] = (2048, 0)
+
+        glyphs_copied += 1
+
     for codepoint, jp_glyph_name in jp_cmap.items():
         if not is_japanese_codepoint(codepoint):
             continue
         
+        # Skip U+3000 as we handled it manually
+        if codepoint == 0x3000:
+            continue
+
         # Skip if Hack already has this character
         if codepoint in hack_cmap:
             continue
