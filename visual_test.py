@@ -15,6 +15,7 @@ TEXT = """
 Lorem ipsumであのイーハトーヴォの世界が広がります。
 abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ
 1234567890 `~!@#$%^&*()_-=+[]{}|;:'",.<>/
+全角スペース：　
 """
 FONT_SIZE = 24
 BACKGROUND_COLOR = (255, 255, 255)  # White
