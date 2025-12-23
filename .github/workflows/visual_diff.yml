@@ -36,11 +36,14 @@ jobs:
         run: python3 head/visual_test.py --font-path base/build/HackLine-Regular.ttf --output-path /tmp/01_before.png
 
       - name: Build font (head)
-        run: ./build.sh
+        run: ./build.sh --nerd
         working-directory: head
 
       - name: Generate after image
         run: python3 head/visual_test.py --font-path head/build/HackLine-Regular.ttf --output-path /tmp/02_after.png
+
+      - name: Generate Nerd Font after image
+        run: python3 head/visual_test.py --font-path head/build/HackLineNF-Regular.ttf --output-path /tmp/03_nerd_font.png
 
       - name: Upload images to R2
         id: upload
@@ -50,15 +53,19 @@ jobs:
           R2_PUBLIC_URL="${{ secrets.R2_PUBLIC_URL }}"
           BEFORE_FILENAME="01_before_${{ github.run_id }}_${{ github.run_attempt }}.png"
           AFTER_FILENAME="02_after_${{ github.run_id }}_${{ github.run_attempt }}.png"
+          NERD_FONT_FILENAME="03_nerd_font_${{ github.run_id }}_${{ github.run_attempt }}.png"
 
           aws s3 cp /tmp/01_before.png s3://${R2_BUCKET_NAME}/${BEFORE_FILENAME} --endpoint-url ${{ secrets.R2_ENDPOINT }} --acl public-read
           aws s3 cp /tmp/02_after.png s3://${R2_BUCKET_NAME}/${AFTER_FILENAME} --endpoint-url ${{ secrets.R2_ENDPOINT }} --acl public-read
+          aws s3 cp /tmp/03_nerd_font.png s3://${R2_BUCKET_NAME}/${NERD_FONT_FILENAME} --endpoint-url ${{ secrets.R2_ENDPOINT }} --acl public-read
 
           BEFORE_URL="${R2_PUBLIC_URL}/${BEFORE_FILENAME}"
           AFTER_URL="${R2_PUBLIC_URL}/${AFTER_FILENAME}"
+          NERD_FONT_URL="${R2_PUBLIC_URL}/${NERD_FONT_FILENAME}"
 
           echo "before_url=${BEFORE_URL}" >> $GITHUB_OUTPUT
           echo "after_url=${AFTER_URL}" >> $GITHUB_OUTPUT
+          echo "nerd_font_url=${NERD_FONT_URL}" >> $GITHUB_OUTPUT
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESSKEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_SCCESS_KEY }}
@@ -75,3 +82,6 @@ jobs:
 
             **After** (head branch)
             ![After](${{ steps.upload.outputs.after_url }})
+
+            **Nerd Font Test** (HackLineNF)
+            ![Nerd Font](${{ steps.upload.outputs.nerd_font_url }})
