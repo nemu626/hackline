@@ -12,17 +12,10 @@ from PIL import Image, ImageDraw, ImageFont
 DEFAULT_FONT_PATH = "build/HackLine-Regular.ttf"
 DEFAULT_OUTPUT_PATH = "build/test_image.png"
 TEXT = """
-あのイーハトーヴォの
-すきとおった風、
-夏でも底に冷たさをもつ青いそら、
-うつくしい森で飾られたモーリオ市、
-郊外のぎらぎらひかる草の波。
-
-祇辻飴葛蛸鯖鰯噌庖箸
-
-ABCDEFGHIJKLM
-abcdefghijklm
-1234567890
+Lorem ipsumであのイーハトーヴォの世界が広がります。
+abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ
+1234567890 `~!@#$%^&*()_-=+[]{}|;:'",.<>/
+全角スペース：　
 """
 FONT_SIZE = 24
 BACKGROUND_COLOR = (255, 255, 255)  # White
