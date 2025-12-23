@@ -11,12 +11,43 @@ from PIL import Image, ImageDraw, ImageFont
 # --- Default Configuration ---
 DEFAULT_FONT_PATH = "build/HackLine-Regular.ttf"
 DEFAULT_OUTPUT_PATH = "build/test_image.png"
-TEXT = """
+
+# Basic text test
+# U+3000 = Ideographic Space (全角スペース)
+FULLWIDTH_SPACE = "\u3000"
+TEXT_BASIC = """\
 Lorem ipsumであのイーハトーヴォの世界が広がります。
 abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ
-1234567890 `~!@#$%^&*()_-=+[]{}|;:'",.<>/
-全角スペース：　
+1234567890 `~!@#$%^&*()_-=+[]{{}}|;:'",.<>/
+全角スペース：[\u3000] ← 括弧内に全角スペース
 """
+
+# Nerd Font icon test (representative glyphs from each set)
+# Using Unicode escapes to ensure correct encoding
+NERD_ICONS = {
+    "Powerline": ["\ue0a0", "\ue0a1", "\ue0a2", "\ue0b0", "\ue0b2", "\ue0b4", "\ue0b6", "\ue0c0", "\ue0c4", "\ue0d0"],
+    "Seti-UI": ["\ue5fa", "\ue5fb", "\ue5fc", "\ue5fd", "\ue5fe", "\ue5ff", "\ue600", "\ue601", "\ue602", "\ue603"],
+    "Devicons": ["\ue700", "\ue701", "\ue702", "\ue703", "\ue704", "\ue705", "\ue706", "\ue707", "\ue708", "\ue709"],
+    "Font Awesome": ["\ued00", "\uf000", "\uf001", "\uf002", "\uf004", "\uf005", "\uf007", "\uf008", "\uf009", "\uf00a"],
+    "Weather": ["\ue300", "\ue301", "\ue302", "\ue303", "\ue304", "\ue305", "\ue306", "\ue307", "\ue308", "\ue309"],
+    "Octicons": ["\uf400", "\uf401", "\uf402", "\uf403", "\uf404", "\uf405", "\uf406", "\uf407", "\uf408", "\uf409"],
+    "Font Logos": ["\uf300", "\uf301", "\uf302", "\uf303", "\uf304", "\uf305", "\uf306", "\uf307", "\uf308", "\uf309"],
+    "Pomicons": ["\ue000", "\ue001", "\ue002", "\ue003", "\ue004", "\ue005", "\ue006", "\ue007", "\ue008", "\ue009"],
+    "Codicons": ["\uea60", "\uea61", "\uea62", "\uea63", "\uea64", "\uea65", "\uea66", "\uea67", "\uea68", "\uea69"],
+    "Material Design": ["\U000f0372", "\U000f0794", "\U000f0238", "\U000f02a4", "\U000f03d8", "\U000f1c3e", "\U000f08c7", "\U000f056e", "\U000f1918", "\U000f0668"],
+}
+
+def build_nerd_font_text():
+    """Build Nerd Font test text from icon definitions."""
+    lines = ["--- Nerd Font Icon Test ---"]
+    for name, icons in NERD_ICONS.items():
+        icons_str = " ".join(icons)
+        lines.append(f"{name}: {icons_str}")
+    return "\n".join(lines)
+
+TEXT_NERD_FONT = build_nerd_font_text()
+
+
 FONT_SIZE = 24
 BACKGROUND_COLOR = (255, 255, 255)  # White
 TEXT_COLOR = (0, 0, 0)  # Black
@@ -45,12 +76,21 @@ def main():
         print(f"Error: Could not load font from '{args.font_path}'")
         return
 
+    # Determine which text to use based on font type
+    # If font path contains 'NF', include Nerd Font icon test
+    if 'NF' in args.font_path or 'nerd' in args.font_path.lower():
+        text = TEXT_BASIC + "\n" + TEXT_NERD_FONT
+        print("Using Nerd Font test (includes icon test)")
+    else:
+        text = TEXT_BASIC
+        print("Using basic test (no icons)")
+
     # Create a dummy image to calculate text size
     dummy_img = Image.new("RGB", (1, 1))
     draw = ImageDraw.Draw(dummy_img)
 
     # Calculate text bounding box
-    text_bbox = draw.multiline_textbbox((0, 0), TEXT.strip(), font=font, spacing=10)
+    text_bbox = draw.multiline_textbbox((0, 0), text.strip(), font=font, spacing=10)
 
     # Calculate image dimensions
     text_width = text_bbox[2] - text_bbox[0]
@@ -65,7 +105,7 @@ def main():
     # Draw the text on the image
     draw.multiline_text(
         (PADDING, PADDING),
-        TEXT.strip(),
+        text.strip(),
         fill=TEXT_COLOR,
         font=font,
         spacing=10
