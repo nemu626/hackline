@@ -42,7 +42,8 @@ NERD_FONT_RANGES = [
     (0xE000, 0xE00A),
     # Codicons
     (0xEA60, 0xEC1E),
-    # Note: Material Design (0xF0001+) excluded - causes cmap overflow
+    # Material Design Icons (requires Format 12 cmap - already supported)
+    (0xF0001, 0xF1AF0),
 ]
 
 
@@ -130,6 +131,18 @@ def patch_with_nerd_glyphs(base_font_path, nerd_font_path, output_path):
     from fontTools.ttLib.tables._c_m_a_p import CmapSubtable
     
     cmap_table = font['cmap']
+    
+    # Separate codepoints: Format 4 can only handle U+0000-U+FFFF (16-bit)
+    # Format 12 can handle all codepoints up to U+10FFFF (32-bit)
+    bmp_cmap = {cp: name for cp, name in base_cmap.items() if cp <= 0xFFFF}
+    full_cmap = dict(base_cmap)
+    
+    # Update existing Format 4 tables to only include BMP codepoints
+    for table in cmap_table.tables:
+        if table.format == 4:
+            table.cmap = dict(bmp_cmap)
+    
+    # Add Format 12 for all codepoints (including supplementary planes)
     has_format12 = any(t.format == 12 for t in cmap_table.tables)
     
     if not has_format12:
@@ -139,7 +152,7 @@ def patch_with_nerd_glyphs(base_font_path, nerd_font_path, output_path):
         cmap12_unicode.platformID = 0
         cmap12_unicode.platEncID = 4
         cmap12_unicode.language = 0
-        cmap12_unicode.cmap = dict(base_cmap)
+        cmap12_unicode.cmap = full_cmap
         cmap_table.tables.append(cmap12_unicode)
         
         # Create Format 12 for platform 3 (Windows), encoding 10
@@ -147,8 +160,13 @@ def patch_with_nerd_glyphs(base_font_path, nerd_font_path, output_path):
         cmap12_windows.platformID = 3
         cmap12_windows.platEncID = 10
         cmap12_windows.language = 0
-        cmap12_windows.cmap = dict(base_cmap)
+        cmap12_windows.cmap = full_cmap
         cmap_table.tables.append(cmap12_windows)
+    else:
+        # Update existing Format 12 tables
+        for table in cmap_table.tables:
+            if table.format == 12:
+                table.cmap = full_cmap
     
     # Update OS/2 table to set PUA (Private Use Area) bit
     # This helps applications recognize that the font contains PUA glyphs
