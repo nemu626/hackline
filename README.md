@@ -86,3 +86,6 @@ python3 add_nerd_glyphs.py
 - [LINE Seed JP](https://seed.line.me/) - LY Corporation
 - [Nerd Fonts](https://github.com/ryanoasis/nerd-fonts) - Ryan L McIntyre
 
+## 謝辞
+各Fontを配布してくださった各位に感謝します。
+また日本語合成フォントやNerd Font対応などに[yuru7](https://github.com/yuru7)氏の[HackGen](https://github.com/yuru7/HackGen)における取組みを参考させていただきました。ありがとうございます。
