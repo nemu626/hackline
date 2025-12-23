@@ -36,7 +36,7 @@ jobs:
         run: python3 head/visual_test.py --font-path base/build/HackLine-Regular.ttf --output-path /tmp/01_before.png
 
       - name: Build font (head)
-        run: ./build.sh
+        run: ./build.sh --nerd
         working-directory: head
 
       - name: Generate after image
