@@ -29,27 +29,22 @@ jobs:
         run: pip install --upgrade pip && pip install fonttools pillow
 
       - name: Build font (base)
-        run: ./build.sh
+        run: ./build.sh --nerd
         working-directory: base
 
-      - name: Generate before image (HackLine)
-        run: python3 head/visual_test.py --font-path base/build/HackLine-Regular.ttf --output-path /tmp/01_before_hackline.png
+      - name: Generate before images
+        run: |
+          python3 head/visual_test.py --font-path base/build/HackLine-Regular.ttf --output-path /tmp/01_before_std.png
+          python3 head/visual_test.py --font-path base/build/HackLineNF-Regular.ttf --output-path /tmp/03_before_nf.png
 
       - name: Build font (head)
         run: ./build.sh --nerd
         working-directory: head
 
-      - name: Generate after image (HackLine)
-        run: python3 head/visual_test.py --font-path head/build/HackLine-Regular.ttf --output-path /tmp/02_after_hackline.png
-
-      - name: Generate after image (HackLineJK)
-        run: python3 head/visual_test.py --font-path head/build/HackLineJK-Regular.ttf --output-path /tmp/03_after_hackline_jk.png
-
-      - name: Generate after image (HackLineNF)
-        run: python3 head/visual_test.py --font-path head/build/HackLineNF-Regular.ttf --output-path /tmp/04_after_hackline_nf.png
-
-      - name: Generate after image (HackLineJKNF)
-        run: python3 head/visual_test.py --font-path head/build/HackLineJKNF-Regular.ttf --output-path /tmp/05_after_hackline_jknf.png
+      - name: Generate after images
+        run: |
+          python3 head/visual_test.py --font-path head/build/HackLine-Regular.ttf --output-path /tmp/02_after_std.png
+          python3 head/visual_test.py --font-path head/build/HackLineJKNF-Regular.ttf --output-path /tmp/04_after_jknf.png
 
       - name: Upload images to R2
         id: upload
@@ -60,11 +55,10 @@ jobs:
 
           declare -A files
           files=(
-            ["/tmp/01_before_hackline.png"]="01_before_hackline"
-            ["/tmp/02_after_hackline.png"]="02_after_hackline"
-            ["/tmp/03_after_hackline_jk.png"]="03_after_hackline_jk"
-            ["/tmp/04_after_hackline_nf.png"]="04_after_hackline_nf"
-            ["/tmp/05_after_hackline_jknf.png"]="05_after_hackline_jknf"
+            ["/tmp/01_before_std.png"]="before_std"
+            ["/tmp/02_after_std.png"]="after_std"
+            ["/tmp/03_before_nf.png"]="before_nf"
+            ["/tmp/04_after_jknf.png"]="after_jknf"
           )
 
           for file_path in "${!files[@]}"; do
@@ -87,12 +81,12 @@ jobs:
           message: |
             ### Visual Diff
 
-            #### Standard Fonts
-            | Before (HackLine) | After (HackLineJK) |
+            #### Standard Font Comparison (HackLine)
+            | Before (base) | After (head) |
             |---|---|
-            | ![Before](${{ steps.upload.outputs['01_before_hackline_url'] }}) | ![After](${{ steps.upload.outputs['03_after_hackline_jk_url'] }}) |
+            | ![Before](${{ steps.upload.outputs.before_std_url }}) | ![After](${{ steps.upload.outputs.after_std_url }}) |
 
-            #### Nerd Fonts
-            | After (HackLineNF) | After (HackLineJKNF) |
+            #### Nerd Font Comparison (HackLineNF vs HackLineJKNF)
+            | Before (base) | After (head) |
             |---|---|
-            | ![Nerd Font](${{ steps.upload.outputs['04_after_hackline_nf_url'] }}) | ![Nerd Font JK](${{ steps.upload.outputs['05_after_hackline_jknf_url'] }}) |
+            | ![Nerd Font Before](${{ steps.upload.outputs.before_nf_url }}) | ![Nerd Font After](${{ steps.upload.outputs.after_jknf_url }}) |
