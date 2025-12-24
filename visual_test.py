@@ -17,6 +17,7 @@ DEFAULT_OUTPUT_PATH = "build/test_image.png"
 FULLWIDTH_SPACE = "\u3000"
 TEXT_BASIC = """\
 Lorem ipsumであのイーハトーヴォの世界が広がります。
+가나다라마바사 아자차카타파하 LOREM IPSUM.
 abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ
 1234567890 `~!@#$%^&*()_-=+[]{{}}|;:'",.<>/
 全角スペース：[\u3000] ← 括弧内に全角スペース

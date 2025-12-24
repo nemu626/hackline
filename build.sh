@@ -20,7 +20,7 @@ echo -e "${GREEN}HackLine Font Build Script${NC}"
 echo -e "${GREEN}============================================================${NC}"
 
 # Check dependencies
-echo -e "\n${YELLOW}[1/5] Checking dependencies...${NC}"
+echo -e "\n${YELLOW}[1/6] Checking dependencies...${NC}"
 if ! command -v python3 &> /dev/null; then
     echo -e "${RED}Error: python3 is required${NC}"
     exit 1
@@ -33,7 +33,7 @@ fi
 echo -e "${GREEN}✓ Dependencies OK${NC}"
 
 # Download Hack font
-echo -e "\n${YELLOW}[2/5] Downloading Hack font...${NC}"
+echo -e "\n${YELLOW}[2/6] Downloading Hack font...${NC}"
 if [ ! -d "hack_font" ]; then
     curl -L -o Hack-v3.003-ttf.zip https://github.com/source-foundry/Hack/releases/download/v3.003/Hack-v3.003-ttf.zip
     unzip -o Hack-v3.003-ttf.zip -d hack_font
@@ -44,7 +44,7 @@ else
 fi
 
 # Download LINE Seed JP font
-echo -e "\n${YELLOW}[3/5] Downloading LINE Seed JP font...${NC}"
+echo -e "\n${YELLOW}[3/6] Downloading LINE Seed JP font...${NC}"
 if [ ! -d "line_seed_font" ]; then
     curl -L -o LINE_Seed_JP.zip "https://seed.line.me/src/images/fonts/LINE_Seed_JP.zip"
     mkdir -p line_seed_font
@@ -55,14 +55,26 @@ else
     echo -e "${GREEN}✓ LINE Seed JP font already exists${NC}"
 fi
 
+# Download LINE Seed KR font
+echo -e "\n${YELLOW}[4/6] Downloading LINE Seed KR font...${NC}"
+if [ ! -d "line_seed_font_kr" ]; then
+    curl -L -o LINE_Seed_KR.zip "https://seed.line.me/src/images/fonts/LINE_Seed_Sans_KR.zip"
+    mkdir -p line_seed_font_kr
+    unzip -o LINE_Seed_KR.zip -d line_seed_font_kr
+    rm LINE_Seed_KR.zip
+    echo -e "${GREEN}✓ LINE Seed KR font downloaded${NC}"
+else
+    echo -e "${GREEN}✓ LINE Seed KR font already exists${NC}"
+fi
+
 # Build HackLine fonts
-echo -e "\n${YELLOW}[4/5] Building HackLine fonts...${NC}"
+echo -e "\n${YELLOW}[5/6] Building HackLine fonts...${NC}"
 python3 merge_fonts.py
 echo -e "${GREEN}✓ HackLine fonts generated${NC}"
 
 # Build Nerd Font version (optional)
 if [ "$1" = "--nerd" ] || [ "$1" = "-n" ]; then
-    echo -e "\n${YELLOW}[5/5] Building Nerd Font version...${NC}"
+    echo -e "\n${YELLOW}[6/6] Building Nerd Font version...${NC}"
     
     if [ ! -d "HackNerdFont" ]; then
         echo "Downloading HackNerdFont..."

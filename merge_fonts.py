@@ -19,9 +19,13 @@ HACK_REGULAR = "hack_font/ttf/Hack-Regular.ttf"
 HACK_BOLD = "hack_font/ttf/Hack-Bold.ttf"
 LINE_SEED_JP_REGULAR = "line_seed_font/LINESeedJP_20241105/Desktop/TTF/LINESeedJP_TTF_Rg.ttf"
 LINE_SEED_JP_BOLD = "line_seed_font/LINESeedJP_20241105/Desktop/TTF/LINESeedJP_TTF_Bd.ttf"
+LINE_SEED_KR_REGULAR = "line_seed_font_kr/LINE_SeedKR_2023.09.06/TTF/LINESeedKR-Rg.ttf"
+LINE_SEED_KR_BOLD = "line_seed_font_kr/LINE_SeedKR_2023.09.06/TTF/LINESeedKR-Bd.ttf"
 
 OUTPUT_REGULAR = "build/HackLine-Regular.ttf"
 OUTPUT_BOLD = "build/HackLine-Bold.ttf"
+OUTPUT_JK_REGULAR = "build/HackLineJK-Regular.ttf"
+OUTPUT_JK_BOLD = "build/HackLineJK-Bold.ttf"
 
 # Japanese Unicode ranges (Hiragana, Katakana, CJK, etc.)
 JAPANESE_RANGES = [
@@ -35,13 +39,32 @@ JAPANESE_RANGES = [
     (0x3400, 0x4DBF),  # CJK Unified Ideographs Extension A
 ]
 
+# Korean Unicode ranges (Hangul)
+KOREAN_RANGES = [
+    (0xAC00, 0xD7A3),  # Hangul Syllables
+    (0x1100, 0x11FF),  # Hangul Jamo
+    (0x3130, 0x318F),  # Hangul Compatibility Jamo
+    (0xA960, 0xA97F),  # Hangul Jamo Extended-A
+    (0xD7B0, 0xD7FF),  # Hangul Jamo Extended-B
+]
 
-def is_japanese_codepoint(cp):
-    """Check if codepoint is in Japanese ranges."""
-    for start, end in JAPANESE_RANGES:
+
+def is_in_range(cp, ranges):
+    """Check if codepoint is in one of the given ranges."""
+    for start, end in ranges:
         if start <= cp <= end:
             return True
     return False
+
+
+def is_japanese_codepoint(cp):
+    """Check if codepoint is in Japanese ranges."""
+    return is_in_range(cp, JAPANESE_RANGES)
+
+
+def is_korean_codepoint(cp):
+    """Check if codepoint is in Korean ranges."""
+    return is_in_range(cp, KOREAN_RANGES)
 
 
 def draw_dashed_square(pen):
@@ -201,132 +224,97 @@ def scale_glyph(glyph, scale, glyf_table):
     return glyph
 
 
-def merge_fonts(hack_path, jp_path, output_path):
-    """Merge Japanese glyphs from LINE Seed JP into Hack font."""
-    print(f"Loading {hack_path}...")
+def merge_cjk_fonts(hack_path, output_path, cjk_sources):
+    """Merge CJK glyphs from specified sources into Hack font."""
+    print(f"Loading base font: {hack_path}...")
     hack = TTFont(hack_path)
-    
-    print(f"Loading {jp_path}...")
-    jp_font = TTFont(jp_path)
-    
-    # Get unitsPerEm
     hack_upm = hack['head'].unitsPerEm
-    jp_upm = jp_font['head'].unitsPerEm
-    scale = hack_upm / jp_upm
-    print(f"Hack unitsPerEm: {hack_upm}, LINE Seed JP unitsPerEm: {jp_upm}, scale: {scale:.4f}")
-    
-    # Get cmap tables
     hack_cmap = hack.getBestCmap()
-    jp_cmap = jp_font.getBestCmap()
-    
-    # Get glyph tables
     hack_glyf = hack['glyf']
-    jp_glyf = jp_font['glyf']
-    
-    # Get glyph order
     hack_glyph_order = list(hack.getGlyphOrder())
-    
-    # Find Japanese glyphs to copy
-    glyphs_copied = 0
 
-    # Add special handling for U+3000 (Full-width space)
-    # We always overwrite U+3000 to ensure visualization
-    print("Creating custom rounded dashed square glyph for U+3000...")
+    # Create custom dashed square for U+3000
+    print("Creating custom glyph for U+3000...")
     new_glyph_name = "uni3000"
-
-    # Create the glyph
-    new_glyph = create_dashed_square_glyph(hack)
-    hack_glyf[new_glyph_name] = new_glyph
-
-    # Add to glyph order if not present
-    if new_glyph_name not in hack_glyph_order:
-        hack_glyph_order.append(new_glyph_name)
-
-    # Add to ALL cmap tables
-    for table in hack['cmap'].tables:
-        if table.isUnicode():
-            table.cmap[0x3000] = new_glyph_name
-
-    # Add hmtx (width 2048, lsb 0)
-    # Note: We use 2048 to match the em size, as is common for full-width
-    hack['hmtx'].metrics[new_glyph_name] = (2048, 0)
-
-    glyphs_copied += 1
-
-    for codepoint, jp_glyph_name in jp_cmap.items():
-        if not is_japanese_codepoint(codepoint):
-            continue
-        
-        # Skip U+3000 as we handled it manually
-        if codepoint == 0x3000:
-            continue
-
-        # Skip if Hack already has this character
-        if codepoint in hack_cmap:
-            continue
-        
-        # Get glyph from LINE Seed JP
-        if jp_glyph_name not in jp_glyf:
-            continue
-        
-        jp_glyph = jp_glyf[jp_glyph_name]
-        
-        # Create new glyph name for Hack (avoid conflicts)
-        new_glyph_name = f"uni{codepoint:04X}"
-        if new_glyph_name in hack_glyph_order:
-            new_glyph_name = f"jp_{codepoint:04X}"
-        
-        # Copy and scale the glyph
-        try:
-            new_glyph = copy.deepcopy(jp_glyph)
-            new_glyph = scale_glyph(new_glyph, scale, hack_glyf)
-            
-            # Add to Hack's glyf table
-            hack_glyf[new_glyph_name] = new_glyph
-            
-            # Add to glyph order
+    if new_glyph_name not in hack_glyf:
+        new_glyph = create_dashed_square_glyph(hack)
+        hack_glyf[new_glyph_name] = new_glyph
+        if new_glyph_name not in hack_glyph_order:
             hack_glyph_order.append(new_glyph_name)
-            
-            # Add to cmap
-            hack_cmap[codepoint] = new_glyph_name
-            
-            # Scale and add hmtx (horizontal metrics)
-            if jp_glyph_name in jp_font['hmtx'].metrics:
-                width, lsb = jp_font['hmtx'].metrics[jp_glyph_name]
-                hack['hmtx'].metrics[new_glyph_name] = (int(width * scale), int(lsb * scale))
-            
-            glyphs_copied += 1
-            
-        except Exception as e:
-            print(f"Warning: Failed to copy glyph U+{codepoint:04X} ({jp_glyph_name}): {e}")
+        for table in hack['cmap'].tables:
+            if table.isUnicode():
+                table.cmap[0x3000] = new_glyph_name
+        hack['hmtx'].metrics[new_glyph_name] = (2048, 0)
+
+    total_glyphs_copied = 0
+
+    for lang, font_path, is_target_codepoint in cjk_sources:
+        if not font_path or not os.path.exists(font_path):
+            print(f"Skipping {lang} font: not found at {font_path}")
             continue
+
+        print(f"Loading {lang} font: {font_path}...")
+        cjk_font = TTFont(font_path)
+        cjk_upm = cjk_font['head'].unitsPerEm
+        scale = hack_upm / cjk_upm
+        print(f"  Scale for {lang}: {scale:.4f}")
+
+        cjk_cmap = cjk_font.getBestCmap()
+        cjk_glyf = cjk_font['glyf']
+        glyphs_copied = 0
+
+        for codepoint, cjk_glyph_name in cjk_cmap.items():
+            if not is_target_codepoint(codepoint) or codepoint in hack_cmap or codepoint == 0x3000:
+                continue
+
+            if cjk_glyph_name not in cjk_glyf:
+                continue
+
+            # Create new glyph name to avoid conflicts
+            new_glyph_name = f"uni{codepoint:04X}_{lang}"
+
+            # Copy and scale glyph
+            try:
+                new_glyph = scale_glyph(copy.deepcopy(cjk_glyf[cjk_glyph_name]), scale, hack_glyf)
+                hack_glyf[new_glyph_name] = new_glyph
+                hack_glyph_order.append(new_glyph_name)
+                hack_cmap[codepoint] = new_glyph_name
+
+                if cjk_glyph_name in cjk_font['hmtx'].metrics:
+                    width, lsb = cjk_font['hmtx'].metrics[cjk_glyph_name]
+                    hack['hmtx'].metrics[new_glyph_name] = (int(width * scale), int(lsb * scale))
+
+                glyphs_copied += 1
+            except Exception as e:
+                print(f"Warning: Failed to copy {lang} glyph U+{codepoint:04X}: {e}")
+        
+        print(f"Copied {glyphs_copied} {lang} glyphs")
+        total_glyphs_copied += glyphs_copied
+        cjk_font.close()
+
+    print(f"\nTotal CJK glyphs copied: {total_glyphs_copied}")
     
-    print(f"Copied {glyphs_copied} Japanese glyphs")
-    
-    # Update glyph order
+    # Update glyph order and font metadata
     hack.setGlyphOrder(hack_glyph_order)
-    
-    # Update maxp table
     hack['maxp'].numGlyphs = len(hack_glyph_order)
-    
+
     # Update font name
     if 'name' in hack:
+        new_font_name = os.path.basename(output_path).split('.')[0].replace("-Regular", "").replace("-Bold", "")
         for record in hack['name'].names:
             if record.nameID in [1, 4, 6]:  # Family, Full, PostScript name
                 try:
                     old_name = record.toUnicode()
-                    new_name = old_name.replace("Hack", "HackLine")
+                    new_name = old_name.replace("Hack", new_font_name)
                     record.string = new_name.encode(record.getEncoding())
-                except:
-                    pass
+                except Exception as e:
+                    print(f"Warning: Could not update name record: {e}")
     
-    # Save
-    print(f"Saving to {output_path}...")
+    # Save the merged font
+    print(f"Saving merged font to {output_path}...")
     hack.save(output_path)
-    print(f"Saved {output_path}")
-    
+    print(f"✓ Saved {output_path}")
     hack.close()
-    jp_font.close()
 
 
 def main():
@@ -334,30 +322,38 @@ def main():
     print("=" * 60)
     print("HackLine Font Generator v3")
     print("=" * 60)
-    
-    # Check input files
-    if not os.path.exists(HACK_REGULAR):
-        print(f"Error: {HACK_REGULAR} not found")
+
+    # Check for base Hack fonts
+    if not os.path.exists(HACK_REGULAR) or not os.path.exists(HACK_BOLD):
+        print("Error: Hack Regular and Bold TTF files must be present.")
         sys.exit(1)
-    
-    if not os.path.exists(LINE_SEED_JP_REGULAR):
-        print(f"Error: {LINE_SEED_JP_REGULAR} not found")
-        sys.exit(1)
-    
-    # Create build directory
+
     os.makedirs("build", exist_ok=True)
-    
-    # Merge Regular
-    print("\n--- Generating Regular weight ---")
-    merge_fonts(HACK_REGULAR, LINE_SEED_JP_REGULAR, OUTPUT_REGULAR)
-    
-    # Merge Bold (if available)
-    if os.path.exists(HACK_BOLD) and os.path.exists(LINE_SEED_JP_BOLD):
-        print("\n--- Generating Bold weight ---")
-        merge_fonts(HACK_BOLD, LINE_SEED_JP_BOLD, OUTPUT_BOLD)
-    
+
+    # --- Generate HackLine (JP only) ---
+    print("\n--- Generating HackLine (Japanese) ---")
+    cjk_sources_jp_reg = [("JP", LINE_SEED_JP_REGULAR, is_japanese_codepoint)]
+    merge_cjk_fonts(HACK_REGULAR, OUTPUT_REGULAR, cjk_sources_jp_reg)
+
+    cjk_sources_jp_bold = [("JP", LINE_SEED_JP_BOLD, is_japanese_codepoint)]
+    merge_cjk_fonts(HACK_BOLD, OUTPUT_BOLD, cjk_sources_jp_bold)
+
+    # --- Generate HackLineJK (JP and KR) ---
+    print("\n--- Generating HackLineJK (Japanese + Korean) ---")
+    cjk_sources_jk_reg = [
+        ("JP", LINE_SEED_JP_REGULAR, is_japanese_codepoint),
+        ("KR", LINE_SEED_KR_REGULAR, is_korean_codepoint),
+    ]
+    merge_cjk_fonts(HACK_REGULAR, OUTPUT_JK_REGULAR, cjk_sources_jk_reg)
+
+    cjk_sources_jk_bold = [
+        ("JP", LINE_SEED_JP_BOLD, is_japanese_codepoint),
+        ("KR", LINE_SEED_KR_BOLD, is_korean_codepoint),
+    ]
+    merge_cjk_fonts(HACK_BOLD, OUTPUT_JK_BOLD, cjk_sources_jk_bold)
+
     print("\n" + "=" * 60)
-    print("Done!")
+    print("All fonts generated successfully!")
     print("=" * 60)
 
 
