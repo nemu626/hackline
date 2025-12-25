@@ -95,3 +95,13 @@ echo -e "${GREEN}Build Complete!${NC}"
 echo -e "${GREEN}============================================================${NC}"
 echo -e "Generated fonts in ${YELLOW}build/${NC}:"
 ls -lh build/*.ttf
+
+# Create release zips
+echo -e "\n${YELLOW}Creating release zip files...${NC}"
+cd build
+zip -j HackLine-All.zip HackLine-Regular.ttf HackLine-Bold.ttf HackLineJK-Regular.ttf HackLineJK-Bold.ttf HackLineNF-Regular.ttf HackLineNF-Bold.ttf HackLineJKNF-Regular.ttf HackLineJKNF-Bold.ttf
+zip -j HackLineJP.zip HackLine-Regular.ttf HackLine-Bold.ttf HackLineNF-Regular.ttf HackLineNF-Bold.ttf
+zip -j HackLineJK.zip HackLineJK-Regular.ttf HackLineJK-Bold.ttf HackLineJKNF-Regular.ttf HackLineJKNF-Bold.ttf
+cd ..
+echo -e "${GREEN}✓ Release zip files created in build/${NC}"
+ls -lh build/*.zip
