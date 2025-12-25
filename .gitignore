@@ -1,6 +1,7 @@
 # ソースフォント（ダウンロードして使用するため、gitには含めない）
 hack_font/
 line_seed_font/
+line_seed_font_kr/
 *.zip
 
 # 参照用HackGenリポジトリ（不要）

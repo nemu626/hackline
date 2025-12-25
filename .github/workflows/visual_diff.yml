@@ -29,21 +29,22 @@ jobs:
         run: pip install --upgrade pip && pip install fonttools pillow
 
       - name: Build font (base)
-        run: ./build.sh
+        run: ./build.sh --nerd
         working-directory: base
 
-      - name: Generate before image
-        run: python3 head/visual_test.py --font-path base/build/HackLine-Regular.ttf --output-path /tmp/01_before.png
+      - name: Generate before images
+        run: |
+          python3 head/visual_test.py --font-path base/build/HackLine-Regular.ttf --output-path /tmp/01_before_std.png
+          python3 head/visual_test.py --font-path base/build/HackLineNF-Regular.ttf --output-path /tmp/03_before_nf.png
 
       - name: Build font (head)
         run: ./build.sh --nerd
         working-directory: head
 
-      - name: Generate after image
-        run: python3 head/visual_test.py --font-path head/build/HackLine-Regular.ttf --output-path /tmp/02_after.png
-
-      - name: Generate Nerd Font after image
-        run: python3 head/visual_test.py --font-path head/build/HackLineNF-Regular.ttf --output-path /tmp/03_nerd_font.png
+      - name: Generate after images
+        run: |
+          python3 head/visual_test.py --font-path head/build/HackLine-Regular.ttf --output-path /tmp/02_after_std.png
+          python3 head/visual_test.py --font-path head/build/HackLineJKNF-Regular.ttf --output-path /tmp/04_after_jknf.png
 
       - name: Upload images to R2
         id: upload
@@ -51,21 +52,24 @@ jobs:
           pip install awscli
           R2_BUCKET_NAME="${{ secrets.S3_BUCKET_NAME }}"
           R2_PUBLIC_URL="${{ secrets.R2_PUBLIC_URL }}"
-          BEFORE_FILENAME="01_before_${{ github.run_id }}_${{ github.run_attempt }}.png"
-          AFTER_FILENAME="02_after_${{ github.run_id }}_${{ github.run_attempt }}.png"
-          NERD_FONT_FILENAME="03_nerd_font_${{ github.run_id }}_${{ github.run_attempt }}.png"
 
-          aws s3 cp /tmp/01_before.png s3://${R2_BUCKET_NAME}/${BEFORE_FILENAME} --endpoint-url ${{ secrets.R2_ENDPOINT }} --acl public-read
-          aws s3 cp /tmp/02_after.png s3://${R2_BUCKET_NAME}/${AFTER_FILENAME} --endpoint-url ${{ secrets.R2_ENDPOINT }} --acl public-read
-          aws s3 cp /tmp/03_nerd_font.png s3://${R2_BUCKET_NAME}/${NERD_FONT_FILENAME} --endpoint-url ${{ secrets.R2_ENDPOINT }} --acl public-read
+          declare -A files
+          files=(
+            ["/tmp/01_before_std.png"]="before_std"
+            ["/tmp/02_after_std.png"]="after_std"
+            ["/tmp/03_before_nf.png"]="before_nf"
+            ["/tmp/04_after_jknf.png"]="after_jknf"
+          )
 
-          BEFORE_URL="${R2_PUBLIC_URL}/${BEFORE_FILENAME}"
-          AFTER_URL="${R2_PUBLIC_URL}/${AFTER_FILENAME}"
-          NERD_FONT_URL="${R2_PUBLIC_URL}/${NERD_FONT_FILENAME}"
-
-          echo "before_url=${BEFORE_URL}" >> $GITHUB_OUTPUT
-          echo "after_url=${AFTER_URL}" >> $GITHUB_OUTPUT
-          echo "nerd_font_url=${NERD_FONT_URL}" >> $GITHUB_OUTPUT
+          for file_path in "${!files[@]}"; do
+            if [ -f "$file_path" ]; then
+              base_name="${files[$file_path]}"
+              filename="${base_name}_${{ github.run_id }}_${{ github.run_attempt }}.png"
+              aws s3 cp "$file_path" "s3://${R2_BUCKET_NAME}/${filename}" --endpoint-url "${{ secrets.R2_ENDPOINT }}" --acl public-read
+              url_var_name="${base_name}_url"
+              echo "${url_var_name}=${R2_PUBLIC_URL}/${filename}" >> $GITHUB_OUTPUT
+            fi
+          done
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESSKEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_SCCESS_KEY }}
@@ -77,11 +81,12 @@ jobs:
           message: |
             ### Visual Diff
 
-            **Before** (base branch)
-            ![Before](${{ steps.upload.outputs.before_url }})
+            #### Standard Font Comparison (HackLine)
+            | Before (base) | After (head) |
+            |---|---|
+            | ![Before](${{ steps.upload.outputs.before_std_url }}) | ![After](${{ steps.upload.outputs.after_std_url }}) |
 
-            **After** (head branch)
-            ![After](${{ steps.upload.outputs.after_url }})
-
-            **Nerd Font Test** (HackLineNF)
-            ![Nerd Font](${{ steps.upload.outputs.nerd_font_url }})
+            #### Nerd Font Comparison (HackLineNF vs HackLineJKNF)
+            | Before (base) | After (head) |
+            |---|---|
+            | ![Nerd Font Before](${{ steps.upload.outputs.before_nf_url }}) | ![Nerd Font After](${{ steps.upload.outputs.after_jknf_url }}) |

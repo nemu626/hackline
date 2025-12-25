@@ -15,8 +15,9 @@ DEFAULT_OUTPUT_PATH = "build/test_image.png"
 # Basic text test
 # U+3000 = Ideographic Space (全角スペース)
 FULLWIDTH_SPACE = "\u3000"
-TEXT_BASIC = """\
-Lorem ipsumであのイーハトーヴォの世界が広がります。
+TEXT_JAPANESE = "Lorem ipsumであのイーハトーヴォの世界が広がります。"
+TEXT_KOREAN = "가나다라마바사 아자차카타파하 LOREM IPSUM."
+TEXT_ALPHANUMERIC = """\
 abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ
 1234567890 `~!@#$%^&*()_-=+[]{{}}|;:'",.<>/
 全角スペース：[\u3000] ← 括弧内に全角スペース
@@ -77,12 +78,22 @@ def main():
         return
 
     # Determine which text to use based on font type
+    base_text_parts = [TEXT_JAPANESE]
+    font_name = os.path.basename(args.font_path)
+
+    # Add Korean text only for JK variants
+    if "JK" in font_name:
+        base_text_parts.append(TEXT_KOREAN)
+        print("Korean text included for JK variant.")
+
+    base_text_parts.append(TEXT_ALPHANUMERIC)
+    text = "\n".join(base_text_parts)
+
     # If font path contains 'NF', include Nerd Font icon test
-    if 'NF' in args.font_path or 'nerd' in args.font_path.lower():
-        text = TEXT_BASIC + "\n" + TEXT_NERD_FONT
+    if 'NF' in font_name or 'nerd' in font_name.lower():
+        text += "\n" + TEXT_NERD_FONT
         print("Using Nerd Font test (includes icon test)")
     else:
-        text = TEXT_BASIC
         print("Using basic test (no icons)")
 
     # Create a dummy image to calculate text size

@@ -178,15 +178,19 @@ def patch_with_nerd_glyphs(base_font_path, nerd_font_path, output_path):
     
     # Update font name
     if 'name' in font:
+        import re
         for record in font['name'].names:
             if record.nameID in [1, 4, 6]:
                 try:
                     old_name = record.toUnicode()
+                    # Ensure "NF" is appended correctly, e.g., HackLine -> HackLineNF, HackLineJK -> HackLineJKNF
                     if "NF" not in old_name:
-                        new_name = old_name.replace("HackLine", "HackLineNF")
-                        record.string = new_name.encode(record.getEncoding())
-                except:
-                    pass
+                         new_name = re.sub(r'^(HackLine(?:JK)?)(.*)$', r'\1NF\2', old_name)
+                         if new_name != old_name:
+                            print(f"Updating font name: '{old_name}' -> '{new_name}'")
+                            record.string = new_name.encode(record.getEncoding())
+                except Exception as e:
+                    print(f"Warning: Could not update name record: {e}")
     
     # Save font first, then reload and resave to normalize tables
     # This ensures glyf/loca table alignment without removing glyphs
@@ -240,6 +244,8 @@ def main():
     inputs = [
         ("build/HackLine-Regular.ttf", NERD_FONT_REGULAR, "build/HackLineNF-Regular.ttf"),
         ("build/HackLine-Bold.ttf", NERD_FONT_BOLD, "build/HackLineNF-Bold.ttf"),
+        ("build/HackLineJK-Regular.ttf", NERD_FONT_REGULAR, "build/HackLineJKNF-Regular.ttf"),
+        ("build/HackLineJK-Bold.ttf", NERD_FONT_BOLD, "build/HackLineJKNF-Bold.ttf"),
     ]
     
     for base_path, nerd_path, output_path in inputs:
