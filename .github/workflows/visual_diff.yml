@@ -91,7 +91,7 @@ jobs:
           done
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESSKEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_SCCESS_KEY }}
 
       - name: Post visual diff comment
         uses: mshick/add-pr-comment@v2
