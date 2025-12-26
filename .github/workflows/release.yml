@@ -19,43 +19,23 @@ jobs:
         with:
           python-version: '3.11'
       
-      - name: Install dependencies
-        run: pip install fonttools
+      - name: Build fonts using build.sh
+        run: ./build.sh --nerd
       
-      - name: Download source fonts
-        run: |
-          # Hack font
-          curl -L -o Hack.zip https://github.com/source-foundry/Hack/releases/download/v3.003/Hack-v3.003-ttf.zip
-          unzip Hack.zip -d hack_font
-          
-          # LINE Seed JP font
-          curl -L -o LINE_Seed_JP.zip "https://seed.line.me/src/images/fonts/LINE_Seed_JP.zip"
-          mkdir -p line_seed_font
-          unzip LINE_Seed_JP.zip -d line_seed_font
-          
-          # HackNerdFont (for Nerd Font glyphs)
-          curl -L -o HackNerdFont.zip https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/Hack.zip
-          unzip HackNerdFont.zip -d HackNerdFont
-      
-      - name: Build fonts
-        run: |
-          python3 merge_fonts.py
-          python3 add_nerd_glyphs.py
-      
-      - name: Create release archives
+      - name: Rename release archives with version
         run: |
           cd build
-          zip -r ../HackLine-${{ github.ref_name }}.zip HackLine-Regular.ttf HackLine-Bold.ttf
-          zip -r ../HackLineNF-${{ github.ref_name }}.zip HackLineNF-Regular.ttf HackLineNF-Bold.ttf
-          zip -r ../HackLine-All-${{ github.ref_name }}.zip *.ttf
+          mv HackLineJP.zip HackLineJP-${{ github.ref_name }}.zip
+          mv HackLineJK.zip HackLineJK-${{ github.ref_name }}.zip
+          mv HackLine-All.zip HackLine-All-${{ github.ref_name }}.zip
       
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            HackLine-${{ github.ref_name }}.zip
-            HackLineNF-${{ github.ref_name }}.zip
-            HackLine-All-${{ github.ref_name }}.zip
+            build/HackLineJP-${{ github.ref_name }}.zip
+            build/HackLineJK-${{ github.ref_name }}.zip
+            build/HackLine-All-${{ github.ref_name }}.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
