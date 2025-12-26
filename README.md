@@ -6,8 +6,12 @@ Hack と LINE Seed JP を合成したプログラミングフォント。
 ## 特徴
 
 - **ラテン文字**: Hack フォント由来（プログラミング向け等幅フォント）
+  - **全角:半角 = 5:3**: 全角文字と半角文字が5:3の比率になります。(2:1はまだないです・・・)
 - **日本語文字**: LINE Seed JP 由来（ひらがな、カタカナ、漢字 約7,100文字）
+- **韓国語文字**: 日本語、韓国語を同時に扱う環境のために、LINE Seed JPとKRを追加した**HackLine JK**
+  - ハングルは、日本語文字と同じ幅になるように調整しました。
 - **Nerd Font対応**: アイコンフォント（Devicons, Codicons, FontLogos等）
+- **全角スペース可視化**: 全角スペース（U+3000）を視覚的に識別可能にしています。
 
 | ![Sample](docs/HackLineSample.png) | ![Sample](docs/HackLineSampleClang.png) |
 |---|---|
@@ -21,8 +25,9 @@ Hack と LINE Seed JP を合成したプログラミングフォント。
 
 | ファイル名 | 内容 |
 |-----------|------|
-| `HackLine-vX.X.X.zip` | 通常版 (Regular, Bold) |
-| `HackLineNF-vX.X.X.zip` | Nerd Font版 (アイコン付き) |
+| `HackLine-vX.X.X.zip` | **通常版** (Regular, Bold) |
+| `HackLineJK-vX.X.X.zip` | **JK(ハングル対応)版** (Regular, Bold) |
+| `HackLineNF-vX.X.X.zip` | **Nerd Font版** (アイコン付き) |
 | `HackLine-All-vX.X.X.zip` | 全種類セット |
 
 ### フォント種類
@@ -40,6 +45,7 @@ Hack と LINE Seed JP を合成したプログラミングフォント。
 
 - Python 3.x
 - fonttools (`pip install fonttools`)
+- `zip`, `unzip`コマンド
 
 ### ビルド手順
 
@@ -79,11 +85,12 @@ python3 add_nerd_glyphs.py
 - **ビルドスクリプト**: MIT License
 
 詳細は [LICENSE](LICENSE), および`/LICENSES` を参照してください。
+参照元のフォントのライセンスについては、それぞれのフォントのリポジトリを参照してください。
 
-## クレジット
+####  参照元フォント
 
 - [Hack](https://github.com/source-foundry/Hack) - Source Foundry
-- [LINE Seed JP](https://seed.line.me/) - LY Corporation
+- [LINE Seed JP, Line Seed KR](https://seed.line.me/) - LY Corporation
 - [Nerd Fonts](https://github.com/ryanoasis/nerd-fonts) - Ryan L McIntyre
 
 ## 謝辞
