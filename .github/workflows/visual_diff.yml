@@ -20,6 +20,14 @@ jobs:
           ref: ${{ github.base_ref }}
           path: base
 
+      - name: Get commit hashes
+        id: get_shas
+        run: |
+          cd head
+          echo "head_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          cd ../base
+          echo "base_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -46,28 +54,39 @@ jobs:
           python3 head/visual_test.py --font-path head/build/HackLine-Regular.ttf --output-path /tmp/02_after_std.png
           python3 head/visual_test.py --font-path head/build/HackLineJKNF-Regular.ttf --output-path /tmp/04_after_jknf.png
 
+      - name: Install AWS CLI
+        run: pip install awscli
+
+      - name: Delete old images from R2
+        run: |
+          R2_BUCKET_NAME="${{ secrets.S3_BUCKET_NAME }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          aws s3 rm "s3://${R2_BUCKET_NAME}/pr-${PR_NUMBER}" --recursive --endpoint-url "${{ secrets.R2_ENDPOINT }}" || true
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESSKEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+
       - name: Upload images to R2
         id: upload
         run: |
-          pip install awscli
           R2_BUCKET_NAME="${{ secrets.S3_BUCKET_NAME }}"
           R2_PUBLIC_URL="${{ secrets.R2_PUBLIC_URL }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
 
           declare -A files
           files=(
-            ["/tmp/01_before_std.png"]="before_std"
-            ["/tmp/02_after_std.png"]="after_std"
-            ["/tmp/03_before_nf.png"]="before_nf"
-            ["/tmp/04_after_jknf.png"]="after_jknf"
+            ["/tmp/01_before_std.png"]="before_std.png"
+            ["/tmp/02_after_std.png"]="after_std.png"
+            ["/tmp/03_before_nf.png"]="before_nf.png"
+            ["/tmp/04_after_jknf.png"]="after_jknf.png"
           )
 
           for file_path in "${!files[@]}"; do
             if [ -f "$file_path" ]; then
-              base_name="${files[$file_path]}"
-              filename="${base_name}_${{ github.run_id }}_${{ github.run_attempt }}.png"
-              aws s3 cp "$file_path" "s3://${R2_BUCKET_NAME}/${filename}" --endpoint-url "${{ secrets.R2_ENDPOINT }}" --acl public-read
-              url_var_name="${base_name}_url"
-              echo "${url_var_name}=${R2_PUBLIC_URL}/${filename}" >> $GITHUB_OUTPUT
+              filename="${files[$file_path]}"
+              aws s3 cp "$file_path" "s3://${R2_BUCKET_NAME}/pr-${PR_NUMBER}/${filename}" --endpoint-url "${{ secrets.R2_ENDPOINT }}" --acl public-read
+              url_var_name="$(basename ${filename} .png)_url"
+              echo "${url_var_name}=${R2_PUBLIC_URL}/pr-${PR_NUMBER}/${filename}?v=${{ github.sha }}" >> $GITHUB_OUTPUT
             fi
           done
         env:
@@ -82,11 +101,11 @@ jobs:
             ### Visual Diff
 
             #### Standard Font Comparison (HackLine)
-            | Before (base) | After (head) |
+            | Before (base) `${{ steps.get_shas.outputs.base_sha }}` | After (head) `${{ steps.get_shas.outputs.head_sha }}` |
             |---|---|
             | ![Before](${{ steps.upload.outputs.before_std_url }}) | ![After](${{ steps.upload.outputs.after_std_url }}) |
 
             #### Nerd Font Comparison (HackLineNF vs HackLineJKNF)
-            | Before (base) | After (head) |
+            | Before (base) `${{ steps.get_shas.outputs.base_sha }}` | After (head) `${{ steps.get_shas.outputs.head_sha }}` |
             |---|---|
             | ![Nerd Font Before](${{ steps.upload.outputs.before_nf_url }}) | ![Nerd Font After](${{ steps.upload.outputs.after_jknf_url }}) |
