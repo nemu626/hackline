@@ -16,7 +16,7 @@ DEFAULT_OUTPUT_PATH = "build/test_image.png"
 # U+3000 = Ideographic Space (全角スペース)
 FULLWIDTH_SPACE = "\u3000"
 TEXT_JAPANESE = "Lorem ipsumであのイーハトーヴォの世界が広がります。"
-TEXT_KOREAN = "가나다라마바사 아자차카타파하 LOREM IPSUM."
+TEXT_KOREAN = "Lorem ipsum한 다람쥐 헌 쳇바퀴에 타고파."
 TEXT_ALPHANUMERIC = f"""\
 abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ
 1234567890 `~!@#$%^&*()_-=+[]{{}}|;:'",.<>/
