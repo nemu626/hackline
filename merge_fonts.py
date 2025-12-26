@@ -268,7 +268,21 @@ def merge_cjk_fonts(hack_path, output_path, cjk_sources):
         cjk_font = TTFont(font_path)
         cjk_upm = cjk_font['head'].unitsPerEm
         scale = hack_upm / cjk_upm
-        print(f"  Scale for {lang}: {scale:.4f}")
+        # For Korean fonts, the original glyph width (883) is smaller than Japanese (1000).
+        # Apply additional scaling to match the 5:3 half-width to full-width ratio.
+        if lang == "KR":
+            # Get typical Korean glyph width (가 = U+AC00)
+            kr_cmap = cjk_font.getBestCmap()
+            if 0xAC00 in kr_cmap:
+                kr_glyph_name = kr_cmap[0xAC00]
+                kr_width, _ = cjk_font['hmtx'].metrics[kr_glyph_name]
+                # Scale to make full-width = 2048 (same as JP)
+                # Target width should be 2048, so extra_scale = 1000 / kr_width
+                extra_scale = 1000 / kr_width
+                scale = scale * extra_scale
+                print(f"  Adjusted scale for {lang}: {scale:.4f} (extra: {extra_scale:.4f})")
+        else:
+            print(f"  Scale for {lang}: {scale:.4f}")
 
         cjk_cmap = cjk_font.getBestCmap()
         cjk_glyf = cjk_font['glyf']
