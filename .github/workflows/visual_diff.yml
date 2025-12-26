@@ -43,7 +43,7 @@ jobs:
       - name: Generate before images
         run: |
           python3 head/visual_test.py --font-path base/build/HackLine-Regular.ttf --output-path /tmp/01_before_std.png
-          python3 head/visual_test.py --font-path base/build/HackLineNF-Regular.ttf --output-path /tmp/03_before_nf.png
+          python3 head/visual_test.py --font-path base/build/HackLineJKNF-Regular.ttf --output-path /tmp/03_before_jknf.png
 
       - name: Build font (head)
         run: ./build.sh --nerd
@@ -64,7 +64,7 @@ jobs:
           aws s3 rm "s3://${R2_BUCKET_NAME}/pr-${PR_NUMBER}" --recursive --endpoint-url "${{ secrets.R2_ENDPOINT }}" || true
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESSKEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_SCCESS_KEY }}
 
       - name: Upload images to R2
         id: upload
@@ -77,7 +77,7 @@ jobs:
           files=(
             ["/tmp/01_before_std.png"]="before_std.png"
             ["/tmp/02_after_std.png"]="after_std.png"
-            ["/tmp/03_before_nf.png"]="before_nf.png"
+            ["/tmp/03_before_jknf.png"]="before_jknf.png"
             ["/tmp/04_after_jknf.png"]="after_jknf.png"
           )
 
@@ -105,7 +105,7 @@ jobs:
             |---|---|
             | ![Before](${{ steps.upload.outputs.before_std_url }}) | ![After](${{ steps.upload.outputs.after_std_url }}) |
 
-            #### Nerd Font Comparison (HackLineNF vs HackLineJKNF)
+            #### Nerd Font Comparison (HackLineJKNF)
             | Before (base) `${{ steps.get_shas.outputs.base_sha }}` | After (head) `${{ steps.get_shas.outputs.head_sha }}` |
             |---|---|
-            | ![Nerd Font Before](${{ steps.upload.outputs.before_nf_url }}) | ![Nerd Font After](${{ steps.upload.outputs.after_jknf_url }}) |
+            | ![Nerd Font Before](${{ steps.upload.outputs.before_jknf_url }}) | ![Nerd Font After](${{ steps.upload.outputs.after_jknf_url }}) |
