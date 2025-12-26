@@ -17,10 +17,10 @@ DEFAULT_OUTPUT_PATH = "build/test_image.png"
 FULLWIDTH_SPACE = "\u3000"
 TEXT_JAPANESE = "Lorem ipsumであのイーハトーヴォの世界が広がります。"
 TEXT_KOREAN = "가나다라마바사 아자차카타파하 LOREM IPSUM."
-TEXT_ALPHANUMERIC = """\
+TEXT_ALPHANUMERIC = f"""\
 abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ
 1234567890 `~!@#$%^&*()_-=+[]{{}}|;:'",.<>/
-全角スペース：[\u3000] ← 括弧内に全角スペース
+全角スペース：[{FULLWIDTH_SPACE}] ← 括弧内に全角スペース
 """
 
 # Nerd Font icon test (representative glyphs from each set)

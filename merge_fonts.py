@@ -70,20 +70,29 @@ def is_korean_codepoint(cp):
 def draw_dashed_square(pen):
     """Draw a rounded dashed square using the provided pen.
     Coordinates based on HackGen's Ideographic_Space.sfd, scaled by 2.
+    Offset applied to center the glyph for full-width (2048 units).
     """
     scale = 2.0
+    # Original coordinates have left edge at 166, right edge at 858
+    # After scaling: 332 to 1716 (width = 1384)
+    # To center in 2048: offset = (2048 - 1384) / 2 - 332 = 0
+    # But we need to shift left by 166*2=332 to start from 0, then LSB handles centering
+    x_offset = -166  # Shift glyph to start from x=0 after scaling
 
     def s(val):
         return round(val * scale)
 
+    def sx(val):
+        return round((val + x_offset) * scale)
+
     def m(x, y):
-        pen.moveTo((s(x), s(y)))
+        pen.moveTo((sx(x), s(y)))
 
     def l(x, y):
-        pen.lineTo((s(x), s(y)))
+        pen.lineTo((sx(x), s(y)))
 
     def c(x1, y1, x2, y2, x3, y3):
-        pen.curveTo((s(x1), s(y1)), (s(x2), s(y2)), (s(x3), s(y3)))
+        pen.curveTo((sx(x1), s(y1)), (sx(x2), s(y2)), (sx(x3), s(y3)))
 
     # Segment 1: Top-Left Corner
     m(272, 736)
@@ -244,7 +253,9 @@ def merge_cjk_fonts(hack_path, output_path, cjk_sources):
         for table in hack['cmap'].tables:
             if table.isUnicode():
                 table.cmap[0x3000] = new_glyph_name
-        hack['hmtx'].metrics[new_glyph_name] = (2048, 0)
+        # Width = 2048 (full-width), LSB = 332 (centered: (2048 - 1384) / 2)
+        # Glyph drawing spans from 332 to 1716 (width = 1384)
+        hack['hmtx'].metrics[new_glyph_name] = (2048, 332)
 
     total_glyphs_copied = 0
 
