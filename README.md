@@ -1,6 +1,6 @@
 # HackLine
 
-Hack と LINE Seed Font を合成した等幅プログラミングフォント。
+Hack と LINE Seed Font を合成した日本語・韓国語対応の等幅プログラミングフォント。
 
 [한국어](README_ko.md)
 
