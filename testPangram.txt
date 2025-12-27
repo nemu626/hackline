@@ -1,0 +1,6 @@
+Lorem ipsumであのイーハトーヴォの世界が広がります。
+Lorem ipsum한 다람쥐 헌 쳇바퀴에 타고파.
+
+abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ
+1234567890 `~!@#$%^&*()_-=+[]{}|;:'",.<>/
+全角スペース：[　] ← 括弧内に全角スペース
