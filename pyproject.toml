@@ -1,0 +1,10 @@
+[project]
+name = "hackline"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fonttools>=4.61.1",
+    "pillow>=12.0.0",
+]
