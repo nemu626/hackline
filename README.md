@@ -23,6 +23,15 @@ Hack と LINE Seed Font を合成した日本語・韓国語対応の等幅プ�
 
 [**Releases**](https://github.com/nemu626/hackline/releases/latest) から最新版をダウンロードできます。
 
+### Arch Linux
+
+AUR (Arch User Repository) からインストールできます。
+`yay` ,`paru`などのAURヘルパーをご利用ください。
+
+```bash
+yay -S ttf-hackline-nerd
+```
+
 ### 配布ファイル
 
 | ファイル名 | 内容 |
